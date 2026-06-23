@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.venv
+
+# Secrets & credentials
+.env
+*.env
+!.env.example
+
+# Données locales (DB SQLite)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Claude Code (config locale machine)
+.claude/
+
+# Windows metadata
+*.Zone.Identifier
+*:Zone.Identifier
+
+# Logs & caches
+*.log
+.cache/
