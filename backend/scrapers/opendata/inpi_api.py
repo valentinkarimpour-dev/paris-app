@@ -13,8 +13,9 @@ from datetime import date, timedelta
 
 import httpx
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv("/home/valentin/claude/claude_code/.env")
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-8s %(name)s: %(message)s")

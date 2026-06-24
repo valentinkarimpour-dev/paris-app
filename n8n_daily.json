@@ -1,0 +1,101 @@
+{
+  "name": "Daily Scrapers",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }]
+        }
+      },
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "id": "node1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/scrapers/run-all",
+        "options": {}
+      },
+      "name": "Run All Scrapers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300],
+      "id": "node2"
+    },
+    {
+      "parameters": {
+        "amount": 5,
+        "unit": "minutes"
+      },
+      "name": "Wait 5min",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [680, 300],
+      "id": "node3"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8000/scrapers/last-run",
+        "options": {}
+      },
+      "name": "Get Last Run",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300],
+      "id": "node4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [{ "value1": "={{ $json.status }}", "operation": "equals", "value2": "done" }]
+        }
+      },
+      "name": "IF Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "id": "node5"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "value": "paris-app-sorties", "__rl": true, "mode": "name" },
+        "text": ":white_check_mark: [DAILY] — run terminé\n\n• Events insérés : {{ $json.total_inserted }}\n• Scrapers OK : {{ $json.completed }}/{{ $json.total_scrapers }}\n• Déclenché à : {{ $json.triggered_at }}\n_Automated with this n8n workflow_",
+        "otherOptions": {}
+      },
+      "name": "Slack OK",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1340, 180],
+      "id": "node6"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "value": "paris-app-sorties", "__rl": true, "mode": "name" },
+        "text": ":x: [DAILY] — erreur détectée\n\n• Scrapers en échec : {{ $json.errors }}/{{ $json.total_scrapers }}\n• Status : {{ $json.status }}\n• Déclenché à : {{ $json.triggered_at }}\n_Automated with this n8n workflow_",
+        "otherOptions": {}
+      },
+      "name": "Slack Error",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1340, 420],
+      "id": "node7"
+    }
+  ],
+  "connections": {
+    "Schedule": { "main": [[{ "node": "Run All Scrapers", "type": "main", "index": 0 }]] },
+    "Run All Scrapers": { "main": [[{ "node": "Wait 5min", "type": "main", "index": 0 }]] },
+    "Wait 5min": { "main": [[{ "node": "Get Last Run", "type": "main", "index": 0 }]] },
+    "Get Last Run": { "main": [[{ "node": "IF Success", "type": "main", "index": 0 }]] },
+    "IF Success": {
+      "main": [
+        [{ "node": "Slack OK", "type": "main", "index": 0 }],
+        [{ "node": "Slack Error", "type": "main", "index": 0 }]
+      ]
+    }
+  }
+}
