@@ -290,19 +290,14 @@
   #period-btn:hover { border-color: var(--green); }
   .period-chevron { color: var(--stone); font-size: 10px; }
   #period-popover {
-    position: absolute;
-    top: calc(100% - 8px);
-    left: 28px;
-    right: 28px;
-    background: rgb(26, 29, 36) !important;
+    position: fixed;
+    background: rgb(26, 29, 36);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 12px;
     z-index: 9999;
     overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    isolation: isolate;
-    backdrop-filter: none;
-    opacity: 1;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    width: 324px;
   }
   #period-popover.hidden { display: none; }
   .period-option {
@@ -840,25 +835,6 @@
       <span id="period-label">En cours</span>
       <span class="period-chevron">▾</span>
     </button>
-    <div id="period-popover" class="hidden">
-      <div class="period-option active" data-mode="current">
-        En cours <span class="period-hint">date active aujourd'hui</span>
-      </div>
-      <div class="period-option" data-mode="recent">
-        Ouverts il y a moins de
-        <span class="period-inline">
-          <input type="number" id="period-days-val" min="1" value="30">
-          <select id="period-days-unit">
-            <option value="1">jours</option>
-            <option value="7">semaines</option>
-            <option value="30">mois</option>
-          </select>
-        </span>
-      </div>
-      <div class="period-option" data-mode="all">
-        Tous les événements
-      </div>
-    </div>
   </div>
 
   <div class="sidebar-divider"></div>
@@ -1601,9 +1577,13 @@ document.querySelectorAll('.cat-btn').forEach(btn => {
 // ══════════════════════════════════════════
 const periodPopover = document.getElementById('period-popover');
 const periodLabel   = document.getElementById('period-label');
+const periodBtn     = document.getElementById('period-btn');
 
-document.getElementById('period-btn').addEventListener('click', e => {
+periodBtn.addEventListener('click', e => {
   e.stopPropagation();
+  const rect = periodBtn.getBoundingClientRect();
+  periodPopover.style.top  = (rect.bottom + 6) + 'px';
+  periodPopover.style.left = rect.left + 'px';
   periodPopover.classList.toggle('hidden');
 });
 
@@ -1660,5 +1640,25 @@ mapContainer.addEventListener('drop', e => {
 
 map.on('click', e => placePin(e.latlng.lat, e.latlng.lng));
 </script>
+
+<div id="period-popover" class="hidden">
+  <div class="period-option active" data-mode="current">
+    En cours <span class="period-hint">date active aujourd'hui</span>
+  </div>
+  <div class="period-option" data-mode="recent">
+    Ouverts il y a moins de
+    <span class="period-inline">
+      <input type="number" id="period-days-val" min="1" value="30">
+      <select id="period-days-unit">
+        <option value="1">jours</option>
+        <option value="7">semaines</option>
+        <option value="30">mois</option>
+      </select>
+    </span>
+  </div>
+  <div class="period-option" data-mode="all">
+    Tous les événements
+  </div>
+</div>
 </body>
 </html>
