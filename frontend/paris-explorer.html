@@ -611,6 +611,37 @@
   #drop-target-hint.visible { opacity: 1; }
 
   /* ── PEGMAN ── */
+  #geolocate-btn {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    z-index: 999;
+    width: 52px;
+    height: 52px;
+    background: var(--ink);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  #geolocate-btn:hover {
+    border-color: var(--green);
+    transform: scale(1.05);
+    box-shadow: 0 4px 24px var(--green-glow);
+  }
+  #geolocate-btn.loading {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
   #pegman-btn {
     position: absolute;
     top: 20px;
@@ -859,6 +890,7 @@
   <div id="loading"><span class="loader-text dot-anim">Chargement</span></div>
   <div id="map-hint">Glisse le 🚶 sur la carte · Ajuste le rayon avec le slider</div>
   <div id="drop-target-hint">Lâche ici pour explorer ce quartier</div>
+  <button id="geolocate-btn" title="Ma position">📍</button>
   <div id="pegman-btn" draggable="true" title="Glisse-moi sur la carte">🚶</div>
 </div>
 
@@ -1085,6 +1117,31 @@ function toProper(str) {
     .replace(/(?:^|\s|[-''])\S/g, c => c.toUpperCase());
 }
 
+const SOURCE_LABELS = {
+  'lebonbon_food':    'LeBonbon',
+  'lebonbon_drinks':  'LeBonbon',
+  'lebonbon_news':    'LeBonbon',
+  'sortiraparis':     'Sortir à Paris',
+  'timeout_paris':    'Time Out Paris',
+  'paris_opendata':   'Paris Opendata',
+  'paris_fr':         'Paris.fr',
+  'parisbouge_bars':  'ParisBouge',
+  'parisbouge_restos':'ParisBouge',
+  'parisbouge_expos': 'ParisBouge',
+  'newtable':         'NewTable',
+  'inpi_food':        'INPI',
+  'inpi_drinks':      'INPI',
+  'numero_popup':     'Numéro',
+  'secrets_of_paris': 'Secrets of Paris',
+  'parismusee_expos': 'Paris Musées',
+  'OpenStreetMap':    'OpenStreetMap',
+};
+
+function formatSource(source) {
+  if (!source) return '';
+  return SOURCE_LABELS[source] || source;
+}
+
 function getApiDays() {
   if (periodMode === 'recent') {
     const val  = parseInt(document.getElementById('period-days-val').value) || 30;
@@ -1098,9 +1155,10 @@ function applyPeriodFilter(events) {
   if (periodMode !== 'current') return events;
   const today = new Date().toISOString().split('T')[0];
   return events.filter(e => {
-    const startOk = !e.date_debut || e.date_debut <= today;
-    const endOk   = !e.date_fin   || e.date_fin   >= today;
-    return startOk && endOk;
+    if (!e.date_debut && !e.date_fin) return true;
+    if (e.date_debut && e.date_debut > today) return false;
+    if (e.date_fin && e.date_fin < today) return false;
+    return true;
   });
 }
 
@@ -1417,8 +1475,6 @@ async function searchEvents() {
     all.push(e);
   }
 
-  updateCatCounts(all);
-
   // Filtre catégorie
   let filtered = activeCategory === 'all'
     ? all
@@ -1429,6 +1485,8 @@ async function searchEvents() {
 
   // Filtre période (frontend)
   filtered = applyPeriodFilter(filtered);
+
+  updateCatCounts(filtered);
 
   filtered.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
 
@@ -1494,7 +1552,7 @@ function renderEvents(events) {
         <div class="event-dist">${e.dist != null ? formatDist(e.dist) : '—'}</div>
       </div>
       <div class="event-title">${toProper(e.titre)}</div>
-      <div class="event-address">${e.adresse || '—'}</div>
+      <div class="event-address">${toProper(e.adresse) || '—'}</div>
       ${timingBlock}
       <div class="event-badges">
         ${e.source === 'OpenStreetMap' ? '<span class="badge-permanent">Permanent</span>' : (showNew ? '<span class="badge-new">NOUVEAU</span>' : '')}
@@ -1533,9 +1591,9 @@ function renderMarkers(events) {
       .addTo(map);
 
     marker.bindPopup(`
-      <div class="popup-cat" style="color:${markerColor}">${getCatEmoji(e.cat)} ${getCatLabel(e.cat)} · ${e.source}</div>
+      <div class="popup-cat" style="color:${markerColor}">${getCatEmoji(e.cat)} ${getCatLabel(e.cat)} · ${formatSource(e.source)}</div>
       <div class="popup-title">${toProper(e.titre)}</div>
-      ${e.adresse ? `<div class="popup-date">${e.adresse}</div>` : ''}
+      ${e.adresse ? `<div class="popup-date">${toProper(e.adresse)}</div>` : ''}
       ${e.dist != null ? `<div class="popup-date" style="margin-top:4px;color:var(--gold)">${formatDist(e.dist)}</div>` : ''}
       ${e.url ? `<a class="popup-link" href="${e.url}" target="_blank">Site web →</a>` : ''}
       ${expoHtml}
@@ -1659,6 +1717,29 @@ mapContainer.addEventListener('drop', e => {
 });
 
 map.on('click', e => placePin(e.latlng.lat, e.latlng.lng));
+
+document.getElementById('geolocate-btn').addEventListener('click', () => {
+  const btn = document.getElementById('geolocate-btn');
+  if (!navigator.geolocation) {
+    alert('Géolocalisation non supportée par ce navigateur.');
+    return;
+  }
+  btn.classList.add('loading');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      btn.classList.remove('loading');
+      const { latitude: lat, longitude: lng } = pos.coords;
+      map.setView([lat, lng], 16, { animate: true });
+      placePin(lat, lng);
+    },
+    err => {
+      btn.classList.remove('loading');
+      alert('Impossible d\'obtenir votre position.');
+      console.warn('Géolocalisation refusée :', err);
+    },
+    { timeout: 8000, maximumAge: 60000 }
+  );
+});
 </script>
 </body>
 </html>
