@@ -518,7 +518,6 @@
       <button class="cat-btn active" data-cat="all">Tout</button>
       <button class="cat-btn" data-cat="cinema">🎬 Cinéma</button>
       <button class="cat-btn" data-cat="musee">🏛 Musée</button>
-      <button class="cat-btn" data-cat="galerie">🖼 Galerie</button>
       <button class="cat-btn" data-cat="cafe">☕ Café</button>
       <button class="cat-btn" data-cat="resto">🍽 Resto</button>
       <button class="cat-btn" data-cat="bienetre">🧖 Bien-être</button>
@@ -585,8 +584,6 @@ let activeCategory = 'all';
 let highlightedCard = null;
 let museumExposMap = {};
 let museumEverParsedSet = new Set(); // musées dont le parser a déjà trouvé des expos
-let galleryExposMap = {};
-let galleryEverParsedSet = new Set(); // galeries dont le parser a déjà trouvé des expos
 let lastAllEvents = [];
 
 // ══════════════════════════════════════════
@@ -595,7 +592,6 @@ let lastAllEvents = [];
 const CAT_COLORS = {
   cinema:   '#E8503E',
   musee:    '#C9A84C',
-  galerie:  '#A78BCA',
   cafe:     '#A0784A',
   resto:    '#D4825A',
   bienetre: '#5BAFBF',
@@ -607,7 +603,6 @@ const CAT_COLORS = {
 const CAT_EMOJI = {
   cinema:   '🎬',
   musee:    '🏛',
-  galerie:  '🖼',
   cafe:     '☕',
   resto:    '🍽',
   bienetre: '🧖',
@@ -617,7 +612,7 @@ const CAT_EMOJI = {
 };
 
 const API_BASE = 'http://145.241.168.3:8000';
-const OVERPASS_CATS = new Set(['cinema', 'musee', 'galerie']);
+const OVERPASS_CATS = new Set(['cinema', 'musee']);
 const BACKEND_CATS  = new Set(['cafe', 'resto', 'bienetre', 'brocante', 'expo', 'autre']);
 
 function getCatColor(cat) {
@@ -635,13 +630,6 @@ function getMuseumColor(normTitle) {
   return '#5C6470';
 }
 
-// Même logique pour les galeries
-function getGalleryColor(normTitle) {
-  const hasExpo = Object.entries(galleryExposMap).some(([k]) => normalizeName(k) === normTitle);
-  if (hasExpo) return '#4CAF50';
-  if (galleryEverParsedSet.has(normTitle)) return getCatColor('galerie');
-  return '#5C6470';
-}
 
 // ══════════════════════════════════════════
 // NAME NORMALISATION (museum matching)
@@ -724,9 +712,6 @@ function placePin(lat, lng) {
   fetch(`${API_BASE}/museum-events/scrape`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: scrapeBody,
   }).catch(() => {});
-  fetch(`${API_BASE}/gallery-data/scrape`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: scrapeBody,
-  }).catch(() => {});
   setTimeout(() => refreshColors(), 10000);
 
   document.getElementById('map-hint').classList.add('hidden');
@@ -754,10 +739,8 @@ async function fetchPOI(lat, lng, radius) {
     (
       node["amenity"="cinema"](around:${r},${la},${ln});
       node["tourism"="museum"](around:${r},${la},${ln});
-      node["tourism"="gallery"](around:${r},${la},${ln});
       way["amenity"="cinema"](around:${r},${la},${ln});
       way["tourism"="museum"](around:${r},${la},${ln});
-      way["tourism"="gallery"](around:${r},${la},${ln});
     );
     out center;
   `.trim();
@@ -777,7 +760,6 @@ async function fetchPOI(lat, lng, radius) {
     let cat;
     if (tags.amenity === 'cinema')      cat = 'cinema';
     else if (tags.tourism === 'museum') cat = 'musee';
-    else if (tags.tourism === 'gallery') cat = 'galerie';
     else                                cat = 'autre';
 
     const adresseParts = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean);
@@ -843,14 +825,6 @@ async function fetchMuseumExpos(lat, lng, radius) {
   return data.museums_with_recent_expos || {};
 }
 
-async function fetchGalleryData(lat, lng, radius) {
-  const params = new URLSearchParams({ lat, lng, radius });
-  const resp = await fetch(`${API_BASE}/gallery-data?${params}`);
-  if (!resp.ok) throw new Error(`Backend gallery-data HTTP ${resp.status}`);
-  const data = await resp.json();
-  galleryEverParsedSet = new Set((data.galleries_ever_parsed || []).map(n => normalizeName(n)));
-  return data.galleries_with_recent_expos || {};
-}
 
 // ══════════════════════════════════════════
 // REFRESH COLORS (musées + galeries, post-scraping)
@@ -859,24 +833,18 @@ async function refreshColors() {
   if (currentLat === null || !lastAllEvents.length) return;
   try {
     const prevMuseumParsed  = [...museumEverParsedSet].sort().join(',');
-    const prevGalleryParsed = [...galleryEverParsedSet].sort().join(',');
     const prevMuseumExpos   = JSON.stringify(museumExposMap);
-    const prevGalleryExpos  = JSON.stringify(galleryExposMap);
 
-    const [newMuseumExpos, newGalleryExpos] = await Promise.all([
+    const [newMuseumExpos] = await Promise.all([
       fetchMuseumExpos(currentLat, currentLng, currentRadius),
-      fetchGalleryData(currentLat, currentLng, currentRadius),
     ]);
 
     const changed =
-      JSON.stringify(newMuseumExpos)   !== prevMuseumExpos  ||
-      JSON.stringify(newGalleryExpos)  !== prevGalleryExpos ||
-      [...museumEverParsedSet].sort().join(',')  !== prevMuseumParsed  ||
-      [...galleryEverParsedSet].sort().join(',') !== prevGalleryParsed;
+      JSON.stringify(newMuseumExpos) !== prevMuseumExpos ||
+      [...museumEverParsedSet].sort().join(',') !== prevMuseumParsed;
 
     if (!changed) return;
-    museumExposMap  = newMuseumExpos;
-    galleryExposMap = newGalleryExpos;
+    museumExposMap = newMuseumExpos;
 
     const filtered = activeCategory === 'all'
       ? lastAllEvents
@@ -902,13 +870,10 @@ async function searchEvents() {
   const fetchOverpass = activeCategory === 'all' || OVERPASS_CATS.has(activeCategory);
   const fetchBackend  = activeCategory === 'all' || BACKEND_CATS.has(activeCategory);
   const fetchMusee    = activeCategory === 'all' || activeCategory === 'musee';
-  const fetchGalerie  = activeCategory === 'all' || activeCategory === 'galerie';
-
-  const [overpassResult, backendResult, museeResult, galerieResult] = await Promise.allSettled([
+  const [overpassResult, backendResult, museeResult] = await Promise.allSettled([
     fetchOverpass ? fetchPOI(currentLat, currentLng, currentRadius) : Promise.resolve([]),
     fetchBackend  ? fetchBackendEvents(currentLat, currentLng, currentRadius) : Promise.resolve([]),
     fetchMusee    ? fetchMuseumExpos(currentLat, currentLng, currentRadius) : Promise.resolve({}),
-    fetchGalerie  ? fetchGalleryData(currentLat, currentLng, currentRadius) : Promise.resolve({}),
   ]);
 
   // Overpass
@@ -937,13 +902,6 @@ async function searchEvents() {
     console.warn('Museum expos indisponible:', museeResult.reason);
   }
 
-  // Gallery expos
-  galleryExposMap = {};
-  if (galerieResult.status === 'fulfilled') {
-    galleryExposMap = galerieResult.value;
-  } else {
-    console.warn('Gallery data indisponible:', galerieResult.reason);
-  }
 
   // Merge + déduplication par (titre normalisé + lat + lng)
   const seen = new Set();
@@ -994,7 +952,7 @@ function renderEvents(events) {
       ? `<div class="expo-badge">🖼 ${expos.length} expo${expos.length > 1 ? 's' : ''} en cours</div>`
       : '';
     const catColor = e.cat === 'musee'   ? getMuseumColor(normalizeName(e.titre))
-                   : e.cat === 'galerie' ? getGalleryColor(normalizeName(e.titre))
+
                    : getCatColor(e.cat);
     return `
     <div class="event-card" data-id="${e.id}" onclick="focusEvent('${e.id}', ${e.lat ?? 0}, ${e.lng ?? 0})">
@@ -1021,8 +979,7 @@ function renderMarkers(events) {
     const normTitle = normalizeName(e.titre);
     const expos = e.cat === 'musee'
       ? (Object.entries(museumExposMap).find(([k]) => normalizeName(k) === normTitle)  || [])[1] || []
-      : e.cat === 'galerie'
-      ? (Object.entries(galleryExposMap).find(([k]) => normalizeName(k) === normTitle) || [])[1] || []
+
       : [];
 
     const expoHtml = expos.length ? `
@@ -1036,7 +993,7 @@ function renderMarkers(events) {
       </div>` : '';
 
     const markerColor = e.cat === 'musee'   ? getMuseumColor(normTitle)
-                      : e.cat === 'galerie' ? getGalleryColor(normTitle)
+
                       : getCatColor(e.cat);
     const marker = L.marker([e.lat, e.lng], { icon: makeMarkerIcon(markerColor, e.cat) })
       .addTo(map);

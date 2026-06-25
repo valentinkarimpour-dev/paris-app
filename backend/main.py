@@ -68,34 +68,6 @@ def get_events(
 
 
 
-class GalleryScrapeRequest(BaseModel):
-    lat: float
-    lng: float
-    radius: int = 2000
-
-
-@app.post("/gallery-data/scrape")
-def trigger_gallery_scrape(req: GalleryScrapeRequest, background_tasks: BackgroundTasks):
-    from scrapers.galleries import GalleriesScraper
-    scraper = GalleriesScraper()
-    background_tasks.add_task(scraper.run, req.lat, req.lng, req.radius)
-    return {"status": "scraping_started"}
-
-
-@app.get("/gallery-data")
-def get_gallery_data(
-    lat: float = Query(...),
-    lng: float = Query(...),
-    radius: int = Query(2000, ge=100, le=10000),
-    days: int = Query(30, ge=1, le=365),
-):
-    expos       = db.get_recent_gallery_expos(lat=lat, lng=lng, radius_m=radius, days=days)
-    ever_parsed = db.get_galleries_ever_parsed()
-    return {
-        "galleries_with_recent_expos": expos,
-        "galleries_ever_parsed":       ever_parsed,
-    }
-
 
 @app.post("/scrapers/run-all")
 def trigger_all_scrapers(background_tasks: BackgroundTasks):
