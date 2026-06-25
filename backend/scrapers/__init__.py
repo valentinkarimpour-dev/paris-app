@@ -1,4 +1,3 @@
-from .website.sortirparis import SortirAParis
 from .website.parisbouge_autre import ParisBougeAutre
 from .website.parisbouge_restos import ParisBougeRestos
 from .website.parisbouge_bars import ParisBougeBars
@@ -16,7 +15,6 @@ from .website.numero_popup import NumeroPopup
 from .website.secrets_of_paris import SecretsOfParis
 
 from .email.lefooding import LeFooding
-from .email.timeout_paris import TimeOutParis
 from .email.lessentiel_paris import LessentielParis
 
 from .opendata.paris_opendata import ParisOpenData
@@ -43,8 +41,6 @@ ALL_SCRAPERS = [
 
 
 # À revoir avant de remettre en production
-TO_REVIEW = [
-    TimeOutParis,  # filtre /actualites/ manquant, retraite vieux emails, desc LLM capte popup newsletter
-]
+TO_REVIEW = []
 
 MONTHLY_SCRAPERS = [SecretsOfParis, ParisMuseeExpos, MuseofileScraper]
