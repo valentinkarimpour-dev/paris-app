@@ -930,7 +930,7 @@ document.addEventListener('click', e => {
 
 async function fetchSuggestions(q) {
   try {
-    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=5&citycode=75`;
+    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=5&lat=48.8566&lng=2.3522`;
     const res = await fetch(url);
     const data = await res.json();
     renderSuggestions(data.features || []);
