@@ -385,6 +385,15 @@
     color: #0F1117;
     letter-spacing: 0.5px;
   }
+  .badge-permanent {
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    color: var(--stone);
+    letter-spacing: 0.5px;
+  }
 
   .event-timing {
     display: flex;
@@ -1321,7 +1330,7 @@ function renderEvents(events) {
       <div class="event-address">${e.adresse || '—'}</div>
       ${timingBlock}
       <div class="event-badges">
-        ${showNew ? '<span class="badge-new">NOUVEAU</span>' : ''}
+        ${e.source === 'OpenStreetMap' ? '<span class="badge-permanent">Permanent</span>' : (showNew ? '<span class="badge-new">NOUVEAU</span>' : '')}
         ${expoBadge}
       </div>
       <div class="freshness-bar" style="width:${freshPct}%"></div>
