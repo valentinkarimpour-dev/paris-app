@@ -275,7 +275,8 @@ def get_events_in_radius(lat: float, lng: float, radius_m: int, days: int = 30, 
     result = []
     for row in rows:
         ev = dict(row)
-        if cat and ev.get("categorie") != cat:
+        ev_cat = ev.get("categorie") or ""
+        if cat and not (ev_cat == cat or (cat == "autre" and ev_cat.startswith("autre"))):
             continue
         dist = _haversine(lat, lng, ev["lat"], ev["lng"])
         if dist <= radius_m:
