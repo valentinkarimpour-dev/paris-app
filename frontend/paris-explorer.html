@@ -340,6 +340,16 @@
   }
   .period-inline select option { background: #1A1D24; }
 
+  .period-inline input[type="number"]::-webkit-inner-spin-button,
+  .period-inline input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .period-inline input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
   /* ── DIVIDER ── */
   .sidebar-divider {
     height: 1px;
@@ -1666,6 +1676,7 @@ periodBtn.addEventListener('click', e => {
 });
 
 document.addEventListener('click', () => periodPopover.classList.add('hidden'));
+periodPopover.addEventListener('click', e => e.stopPropagation());
 
 document.querySelectorAll('.period-option').forEach(opt => {
   opt.addEventListener('click', e => {
