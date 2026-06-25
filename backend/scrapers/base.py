@@ -57,16 +57,32 @@ Champs attendus :
 - titre        : nom propre du lieu ou événement (court, ex: "Mondial Tissus", "Musée Rodin")
 - description  : résumé en 2 phrases max, neutre et factuel
 - adresse      : adresse complète avec numéro + rue + code postal parisien (null si absente)
-- date_debut   : date d'ouverture/début au format YYYY-MM-DD (null si inconnue).
-    Si le jour et le mois sont mentionnés mais pas l'année, utilise l'année en cours ({date.today().year}).
-- duree_jours  : durée en nombre entier de jours. Convertis les expressions textuelles :
-    "pendant 7 jours" → 7, "1 semaine" → 7, "2 semaines" → 14, "1 mois" → 30, "2 mois" → 60, etc.
-    Si date_debut et date_fin sont toutes deux explicites, calcule la différence en jours.
-    null si l'événement est permanent ou si la durée est inconnue.
+- date_debut   : date d'ouverture ou de début au format YYYY-MM-DD.
+    Si seul le jour et le mois sont mentionnés sans l'année, utilise l'année en cours ({date.today().year}).
+    Exemples de patterns à détecter :
+      "ouvre le 15 juin" → "{date.today().year}-06-15"
+      "à partir du 3 juillet" → "{date.today().year}-07-03"
+      "du 20 juin au 5 juillet" → date_debut = "{date.today().year}-06-20"
+      "depuis le 1er mai" → "{date.today().year}-05-01"
+    null si aucune date de début n'est mentionnée ou inférable.
+- date_fin     : date de fermeture ou de fin au format YYYY-MM-DD.
+    Exemples de patterns à détecter :
+      "jusqu'au 31 août" → "{date.today().year}-08-31"
+      "du 20 juin au 5 juillet" → date_fin = "{date.today().year}-07-05"
+      "pour 3 semaines" → date_debut + 21 jours
+      "pendant tout l'été" → null (trop vague)
+    null si l'événement est permanent (restaurant, bar, galerie ouverte en continu)
+    ou si la fin n'est pas mentionnée.
+- duree_jours  : si date_debut et date_fin sont tous deux présents, calcule la différence en jours.
+    Sinon convertis les expressions textuelles :
+    "1 semaine" → 7, "2 semaines" → 14, "1 mois" → 30, "2 mois" → 60.
+    null si durée inconnue ou événement permanent.
 - categorie    : une seule valeur parmi :
     restaurant, bar, exposition, musee, galerie, cafe, brocante, vide-grenier, popup, wellness, rooftop,
     musique, marche, cinema, spectacle, sport, atelier, boutique
     Si aucune ne convient, réponds "autre: [ta suggestion en minuscules]" (ex: "autre: festival")
+
+IMPORTANT : si l'article décrit un lieu permanent (restaurant, bar, café, galerie), date_fin doit être null même si une date d'ouverture est mentionnée.
 
 Texte de l'article :
 {page_text[:2000]}"""
@@ -85,6 +101,7 @@ Texte de l'article :
             if raw.startswith("json"):
                 raw = raw[4:]
         data = json.loads(raw.strip())
+        data = {k: (None if v == "null" else v) for k, v in data.items()}
         if "categorie" in data:
             data["categorie"] = _normalize_categorie(data["categorie"])
         return data

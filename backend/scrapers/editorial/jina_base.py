@@ -1,0 +1,134 @@
+import asyncio
+import logging
+import re
+import time
+
+import httpx
+from playwright.async_api import async_playwright
+
+from ..base import BaseScraper, extract_with_llm
+
+logger = logging.getLogger(__name__)
+
+_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+
+class JinaBaseScraper(BaseScraper):
+    index_url: str = ""
+    article_url_pattern: str = ""
+    exclude_url_patterns: list[str] = []
+    max_articles: int = 10
+    require_dates: bool = False
+
+    def fetch_jina(self, url: str) -> str:
+        jina_url = f"https://r.jina.ai/{url}"
+        try:
+            with httpx.Client(timeout=20) as client:
+                resp = client.get(jina_url, headers={"Accept": "text/markdown"})
+            logger.debug("[%s] Jina %s → status=%d, len=%d", self.name, url, resp.status_code, len(resp.text))
+            if resp.status_code == 200 and len(resp.text) > 500:
+                return resp.text
+        except Exception as e:
+            logger.debug("[%s] Jina exception : %s", self.name, e)
+        return ""
+
+    def fetch_playwright(self, url: str) -> str:
+        async def _fetch() -> str:
+            async with async_playwright() as pw:
+                browser = await pw.chromium.launch(headless=True)
+                ctx = await browser.new_context(user_agent=_UA, locale="fr-FR")
+                await ctx.route("**/*.{png,jpg,jpeg,gif,webp,woff2,woff,ttf}", lambda r: r.abort())
+                page = await ctx.new_page()
+                try:
+                    await page.goto(url, wait_until="domcontentloaded", timeout=25_000)
+                    await page.wait_for_timeout(2500)
+                    for _ in range(5):
+                        await page.evaluate("window.scrollBy(0, 800)")
+                        await page.wait_for_timeout(300)
+                    return await page.content()
+                except Exception as e:
+                    logger.warning("[%s] Playwright exception sur %s : %s", self.name, url, e)
+                    return ""
+                finally:
+                    await browser.close()
+
+        try:
+            return asyncio.run(_fetch())
+        except Exception as e:
+            logger.warning("[%s] asyncio.run Playwright échoué : %s", self.name, e)
+            return ""
+
+    def fetch(self, url: str) -> str:
+        result = self.fetch_jina(url)
+        if result:
+            logger.debug("[%s] fetch via Jina : %s", self.name, url)
+            return result
+        logger.debug("[%s] Jina vide → fallback Playwright : %s", self.name, url)
+        result = self.fetch_playwright(url)
+        if result:
+            logger.debug("[%s] fetch via Playwright : %s", self.name, url)
+        return result
+
+    def extract_article_urls(self, content: str) -> list[str]:
+        urls = re.findall(r'\]\((https?://[^)]+)\)', content)
+        if not urls:
+            urls = re.findall(r'href=["\'](https?://[^"\']+)["\']', content)
+        if self.article_url_pattern:
+            urls = [u for u in urls if re.search(self.article_url_pattern, u)]
+        if self.exclude_url_patterns:
+            urls = [u for u in urls if not any(re.search(p, u) for p in self.exclude_url_patterns)]
+        return list(dict.fromkeys(urls))[:self.max_articles]
+
+    def scrape(self) -> list[dict]:
+        index_urls = getattr(self, "index_urls", None) or ([self.index_url] if self.index_url else [])
+
+        all_article_urls: list[str] = []
+        for index_url in index_urls:
+            content = self.fetch(index_url)
+            if not content:
+                logger.warning("[%s] index vide : %s", self.name, index_url)
+                continue
+            urls = self.extract_article_urls(content)
+            all_article_urls.extend(urls)
+
+        article_urls = list(dict.fromkeys(all_article_urls))[:self.max_articles]
+        logger.info("[%s] %d articles trouvés sur index", self.name, len(article_urls))
+
+        results = []
+        for url in article_urls:
+            article_content = self.fetch(url)
+            if not article_content:
+                logger.warning("[%s] article vide : %s", self.name, url)
+                continue
+            data = extract_with_llm(article_content)
+            if not data:
+                continue
+            if self.require_dates:
+                CATEGORIES_EPHEMERES = {
+                    "exposition", "popup", "galerie", "musique",
+                    "spectacle", "cinema", "atelier", "marche",
+                }
+                categorie = data.get("categorie", "")
+                est_ephemere = (
+                    categorie in CATEGORIES_EPHEMERES
+                    or categorie.startswith("autre:")
+                )
+                if est_ephemere and not (data.get("date_debut") and data.get("date_fin")):
+                    logger.debug(
+                        "[%s] skipped — événement éphémère sans dates : %s",
+                        self.name, url
+                    )
+                    continue
+            data["url"] = url
+            data["source"] = self.name
+            results.append(data)
+            time.sleep(1)
+
+        seen_titres = set()
+        deduplicated = []
+        for item in results:
+            titre = (item.get("titre") or "").strip().lower()
+            if titre and titre not in seen_titres:
+                seen_titres.add(titre)
+                deduplicated.append(item)
+        return deduplicated

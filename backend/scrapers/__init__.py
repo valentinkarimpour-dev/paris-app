@@ -22,6 +22,7 @@ from .email.lessentiel_paris import LessentielParis
 from .opendata.paris_opendata import ParisOpenData
 from .opendata.inpi_api_food import InpiFoodScraper
 from .opendata.inpi_api_drinks import InpiDrinksScraper
+from .editorial.sources import SortirAParis, TimeOutParis
 
 ALL_SCRAPERS = [
     ParisOpenData,
@@ -36,6 +37,8 @@ ALL_SCRAPERS = [
     NumeroPopup,
     InpiFoodScraper,
     InpiDrinksScraper,
+    SortirAParis,
+    TimeOutParis,
 ]
 
 
