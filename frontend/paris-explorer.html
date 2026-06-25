@@ -386,17 +386,35 @@
     letter-spacing: 0.5px;
   }
 
-  .event-price {
+  .event-timing {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 7px;
+    flex-wrap: wrap;
+  }
+  .timing-open {
     font-size: 10px;
     padding: 2px 8px;
     border-radius: 10px;
-    background: rgba(255,255,255,0.07);
-    color: var(--stone);
-  }
-
-  .event-price.free {
     background: rgba(0,246,111,0.1);
     color: var(--green);
+    font-weight: 500;
+  }
+  .timing-soon {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(245,200,66,0.1);
+    color: var(--gold);
+    font-weight: 500;
+  }
+  .timing-closing {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(255,100,80,0.1);
+    color: #FF8070;
+    font-weight: 500;
   }
 
   .freshness-bar {
@@ -884,6 +902,13 @@ function formatDist(m) {
   return m < 1000 ? `${Math.round(m)}m` : `${(m/1000).toFixed(1)}km`;
 }
 
+function toProper(str) {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .replace(/(?:^|\s|[-''])\S/g, c => c.toUpperCase());
+}
+
 function getApiDays() {
   if (periodMode === 'recent') {
     const val  = parseInt(document.getElementById('period-days-val').value) || 30;
@@ -1264,10 +1289,27 @@ function renderEvents(events) {
       : '';
     const catColor  = e.cat === 'musee' ? getMuseumColor(normalizeName(e.titre)) : getCatColor(e.cat);
     const today     = new Date();
+    const todayMs   = today.setHours(0,0,0,0);
     const identified = new Date(e.identified_date || e.date || today);
-    const ageDays   = Math.max(0, (today - identified) / 86400000);
+    const ageDays   = Math.max(0, (Date.now() - identified) / 86400000);
     const freshPct  = Math.max(0, 100 - (ageDays / 30) * 100).toFixed(0);
     const showNew   = ageDays <= 7;
+
+    let timingHtml = '';
+    if (e.date) {
+      const debut = new Date(e.date).setHours(0,0,0,0);
+      const ouvertDepuis = Math.round((todayMs - debut) / 86400000);
+      if (ouvertDepuis === 0)    timingHtml += '<span class="timing-open">Ouvre aujourd\'hui</span>';
+      else if (ouvertDepuis > 0) timingHtml += `<span class="timing-open">Ouvert depuis ${ouvertDepuis}j</span>`;
+      else                       timingHtml += `<span class="timing-soon">Dans ${Math.abs(ouvertDepuis)}j</span>`;
+    }
+    if (e.date_fin) {
+      const fin = new Date(e.date_fin).setHours(0,0,0,0);
+      const fermeIn = Math.round((fin - todayMs) / 86400000);
+      if (fermeIn === 0)      timingHtml += '<span class="timing-closing">Ferme aujourd\'hui</span>';
+      else if (fermeIn > 0)   timingHtml += `<span class="timing-closing">Ferme dans ${fermeIn}j</span>`;
+    }
+    const timingBlock = timingHtml ? `<div class="event-timing">${timingHtml}</div>` : '';
 
     return `
     <div class="event-card" data-id="${e.id}" onclick="focusEvent('${e.id}', ${e.lat ?? 0}, ${e.lng ?? 0})">
@@ -1275,11 +1317,11 @@ function renderEvents(events) {
         <div class="event-cat" style="color:${catColor}">${getCatEmoji(e.cat)} ${getCatLabel(e.cat)}</div>
         <div class="event-dist">${e.dist != null ? formatDist(e.dist) : '—'}</div>
       </div>
-      <div class="event-title">${e.titre}</div>
+      <div class="event-title">${toProper(e.titre)}</div>
       <div class="event-address">${e.adresse || '—'}</div>
+      ${timingBlock}
       <div class="event-badges">
         ${showNew ? '<span class="badge-new">NOUVEAU</span>' : ''}
-        ${e.prix ? `<span class="event-price ${e.prix === 'Gratuit' ? 'free' : ''}">${e.prix}</span>` : ''}
         ${expoBadge}
       </div>
       <div class="freshness-bar" style="width:${freshPct}%"></div>
@@ -1316,9 +1358,9 @@ function renderMarkers(events) {
 
     marker.bindPopup(`
       <div class="popup-cat" style="color:${markerColor}">${getCatEmoji(e.cat)} ${getCatLabel(e.cat)} · ${e.source}</div>
-      <div class="popup-title">${e.titre}</div>
+      <div class="popup-title">${toProper(e.titre)}</div>
       ${e.adresse ? `<div class="popup-date">${e.adresse}</div>` : ''}
-      <div class="popup-date" style="margin-top:4px;color:var(--gold)">${[e.prix, e.dist != null ? formatDist(e.dist) : null].filter(Boolean).join(' · ')}</div>
+      ${e.dist != null ? `<div class="popup-date" style="margin-top:4px;color:var(--gold)">${formatDist(e.dist)}</div>` : ''}
       ${e.url ? `<a class="popup-link" href="${e.url}" target="_blank">Site web →</a>` : ''}
       ${expoHtml}
     `);
