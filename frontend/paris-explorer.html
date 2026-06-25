@@ -1675,8 +1675,14 @@ periodBtn.addEventListener('click', e => {
   periodPopover.classList.toggle('hidden');
 });
 
-document.addEventListener('click', () => periodPopover.classList.add('hidden'));
-periodPopover.addEventListener('click', e => e.stopPropagation());
+document.addEventListener('click', e => {
+  if (
+    !e.target.closest('#period-popover') &&
+    !e.target.closest('#period-btn')
+  ) {
+    periodPopover.classList.add('hidden');
+  }
+});
 
 document.querySelectorAll('.period-option').forEach(opt => {
   opt.addEventListener('click', e => {
