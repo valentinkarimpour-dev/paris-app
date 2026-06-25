@@ -78,6 +78,7 @@
   /* ── CONTROLS ── */
   #controls {
     padding: 0 28px 20px;
+    position: relative;
   }
 
   .control-label {
@@ -134,10 +135,21 @@
   }
 
   /* ── CATEGORY CHIPS ── */
-  .cat-grid {
+  #cat-scroll {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    gap: 7px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  #cat-scroll::-webkit-scrollbar { display: none; }
+  #cat-fade {
+    position: absolute;
+    right: 0;
+    width: 40px;
+    height: 32px;
+    background: linear-gradient(to right, transparent, var(--ink));
+    pointer-events: none;
   }
 
   .cat-btn {
@@ -153,6 +165,7 @@
     transition: all 0.2s;
     letter-spacing: 0.3px;
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .cat-btn:hover {
@@ -168,80 +181,80 @@
   }
 
   /* ── PERIOD FILTER ── */
-  #period-section {
+  #period-control {
     padding: 0 28px 16px;
+    position: relative;
   }
-
-  .period-tabs {
+  #period-btn {
     display: flex;
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-
-  .period-btn {
-    flex: 1;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.08);
-    color: var(--stone);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 11px;
-    font-weight: 500;
-    padding: 7px 6px;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-  }
-
-  .period-btn:hover {
-    border-color: rgba(255,255,255,0.2);
-    color: var(--cream);
-  }
-
-  .period-btn.active {
-    background: var(--green);
-    border-color: var(--green);
-    color: #0F1117;
-    font-weight: 600;
-  }
-
-  #recent-controls {
-    display: none;
     align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
-    font-size: 11px;
-    color: var(--stone);
-  }
-
-  #recent-controls.visible { display: flex; }
-
-  #recent-days-val {
-    width: 52px;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
     color: var(--cream);
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 8px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    width: 100%;
+    justify-content: space-between;
+  }
+  #period-btn:hover { border-color: var(--green); }
+  .period-chevron { color: var(--stone); font-size: 10px; }
+  #period-popover {
+    position: absolute;
+    top: calc(100% - 8px);
+    left: 28px;
+    right: 28px;
+    background: #1A1D24;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    z-index: 2000;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  #period-popover.hidden { display: none; }
+  .period-option {
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--stone);
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .period-option:hover { background: rgba(255,255,255,0.05); color: var(--cream); }
+  .period-option.active { color: var(--green); }
+  .period-hint { font-size: 10px; opacity: 0.5; margin-left: auto; }
+  .period-inline { display: flex; gap: 6px; align-items: center; }
+  .period-inline input {
+    width: 48px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
+    color: var(--cream);
+    font-size: 12px;
+    padding: 3px 6px;
     text-align: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     outline: none;
   }
-
-  #recent-unit {
-    background: rgba(255,255,255,0.06);
+  .period-inline select {
+    background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 6px;
     color: var(--cream);
+    font-size: 12px;
+    padding: 3px 6px;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 11px;
-    padding: 4px 8px;
-    border-radius: 8px;
     outline: none;
     cursor: pointer;
   }
-
-  #recent-unit option { background: var(--ink); }
+  .period-inline select option { background: #1A1D24; }
 
   /* ── DIVIDER ── */
   .sidebar-divider {
@@ -288,7 +301,7 @@
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 10px;
-    padding: 14px 14px 8px;
+    padding: 14px 16px 0;
     margin-bottom: 8px;
     cursor: pointer;
     transition: all 0.2s;
@@ -316,80 +329,81 @@
   .event-card.highlighted { background: var(--green-dim); border-color: rgba(0,246,111,0.3); }
   .event-card.highlighted::before { opacity: 1; }
 
-  .event-cat {
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 5px;
-    font-weight: 600;
-  }
-
-  .event-title-row {
+  .event-header {
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
-
-  .event-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--cream);
-    line-height: 1.3;
-    flex: 1;
-  }
-
-  .badge-new {
-    display: inline-block;
-    background: var(--green);
-    color: #0F1117;
-    font-size: 9px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 10px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-
-  .event-meta {
-    display: flex;
-    gap: 10px;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
   }
 
-  .event-date {
-    font-size: 11px;
-    color: var(--stone);
+  .event-cat {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
   }
 
   .event-dist {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--green);
+    letter-spacing: 0;
+  }
+
+  .event-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cream);
+    line-height: 1.35;
+    margin-bottom: 4px;
+    font-style: normal;
+  }
+
+  .event-address {
     font-size: 11px;
-    color: var(--gold);
-    margin-left: auto;
-    font-weight: 500;
+    color: var(--stone);
+    margin-bottom: 7px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .event-badges {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .badge-new {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--green);
+    color: #0F1117;
+    letter-spacing: 0.5px;
   }
 
   .event-price {
     font-size: 10px;
-    padding: 2px 7px;
+    padding: 2px 8px;
     border-radius: 10px;
-    background: rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.07);
     color: var(--stone);
   }
 
   .event-price.free {
-    background: rgba(0,246,111,0.12);
+    background: rgba(0,246,111,0.1);
     color: var(--green);
   }
 
   .freshness-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
     height: 2px;
-    background: linear-gradient(90deg, var(--green) 0%, var(--gold) 100%);
+    border-radius: 0 0 10px 10px;
+    margin: 0 -16px;
+    background: linear-gradient(90deg, rgb(0,246,111) 0%, rgb(245,200,66) 100%);
   }
 
   .expo-badge {
@@ -400,8 +414,6 @@
     background: var(--green-dim);
     color: var(--green);
     border: 1px solid rgba(0,246,111,0.3);
-    margin-top: 4px;
-    margin-bottom: 8px;
     letter-spacing: 0.5px;
     font-weight: 500;
   }
@@ -639,11 +651,11 @@
     to   { opacity: 1; transform: translateX(0); }
   }
 
-  #sidebar-header { animation: slideIn 0.5s ease 0.1s both; }
-  #controls       { animation: slideIn 0.5s ease 0.2s both; }
-  #period-section { animation: slideIn 0.5s ease 0.25s both; }
-  #results-header { animation: slideIn 0.5s ease 0.3s both; }
-  #events-list    { animation: slideIn 0.5s ease 0.4s both; }
+  #sidebar-header  { animation: slideIn 0.5s ease 0.1s both; }
+  #controls        { animation: slideIn 0.5s ease 0.2s both; }
+  #period-control  { animation: slideIn 0.5s ease 0.25s both; }
+  #results-header  { animation: slideIn 0.5s ease 0.3s both; }
+  #events-list     { animation: slideIn 0.5s ease 0.4s both; }
 
   /* ── MARKER BOUNCE ── */
   @keyframes markerDrop {
@@ -682,23 +694,8 @@
     <input type="range" id="radius-slider" min="200" max="2000" step="100" value="500">
 
     <div class="control-label" style="margin-top:4px;">Catégories</div>
-    <div class="cat-grid" id="cat-grid">
-      <button class="cat-btn active" data-cat="all"         data-label="Tout">Tout</button>
-      <button class="cat-btn" data-cat="musique"            data-label="🎵 Musique">🎵 Musique</button>
-      <button class="cat-btn" data-cat="exposition"         data-label="🖼 Expo">🖼 Expo</button>
-      <button class="cat-btn" data-cat="vide-grenier"       data-label="🪑 Vide-grenier">🪑 Vide-grenier</button>
-      <button class="cat-btn" data-cat="spectacle"          data-label="🎭 Spectacle">🎭 Spectacle</button>
-      <button class="cat-btn" data-cat="atelier"            data-label="🎨 Atelier">🎨 Atelier</button>
-      <button class="cat-btn" data-cat="restaurant"         data-label="🍽 Restaurant">🍽 Restaurant</button>
-      <button class="cat-btn" data-cat="brocante"           data-label="🪑 Brocante">🪑 Brocante</button>
-      <button class="cat-btn" data-cat="sport"              data-label="🏃 Sport">🏃 Sport</button>
-      <button class="cat-btn" data-cat="cafe"               data-label="☕ Café">☕ Café</button>
-      <button class="cat-btn" data-cat="bar"                data-label="🍺 Bar">🍺 Bar</button>
-      <button class="cat-btn" data-cat="cinema"             data-label="🎬 Cinéma">🎬 Cinéma</button>
-      <button class="cat-btn" data-cat="musee"              data-label="🏛 Musée">🏛 Musée</button>
-      <button class="cat-btn" data-cat="popup"              data-label="🛍 Popup">🛍 Popup</button>
-      <button class="cat-btn" data-cat="autre"              data-label="📌 Autre">📌 Autre</button>
-    </div>
+    <div id="cat-scroll"><button class="cat-btn active" data-cat="all" data-label="Tout">Tout</button><button class="cat-btn" data-cat="musique" data-label="🎵 Musique">🎵 Musique</button><button class="cat-btn" data-cat="exposition" data-label="🖼 Expo">🖼 Expo</button><button class="cat-btn" data-cat="vide-grenier" data-label="🪑 Vide-grenier">🪑 Vide-grenier</button><button class="cat-btn" data-cat="spectacle" data-label="🎭 Spectacle">🎭 Spectacle</button><button class="cat-btn" data-cat="atelier" data-label="🎨 Atelier">🎨 Atelier</button><button class="cat-btn" data-cat="restaurant" data-label="🍽 Restaurant">🍽 Restaurant</button><button class="cat-btn" data-cat="brocante" data-label="🪑 Brocante">🪑 Brocante</button><button class="cat-btn" data-cat="sport" data-label="🏃 Sport">🏃 Sport</button><button class="cat-btn" data-cat="cafe" data-label="☕ Café">☕ Café</button><button class="cat-btn" data-cat="bar" data-label="🍺 Bar">🍺 Bar</button><button class="cat-btn" data-cat="cinema" data-label="🎬 Cinéma">🎬 Cinéma</button><button class="cat-btn" data-cat="musee" data-label="🏛 Musée">🏛 Musée</button><button class="cat-btn" data-cat="popup" data-label="🛍 Popup">🛍 Popup</button><button class="cat-btn" data-cat="autre" data-label="📌 Autre">📌 Autre</button></div>
+    <div id="cat-fade"></div>
 
     <div id="backend-warning" style="display:none;margin-top:12px;font-size:11px;color:var(--gold);letter-spacing:0.3px;">
       ⚠️ Événements dynamiques indisponibles
@@ -708,21 +705,29 @@
   <div class="sidebar-divider"></div>
 
   <!-- PERIOD FILTER -->
-  <div id="period-section">
-    <div class="control-label">Période</div>
-    <div class="period-tabs">
-      <button class="period-btn active" data-period="en_cours">En cours</button>
-      <button class="period-btn" data-period="recent">Récents</button>
-      <button class="period-btn" data-period="all">Tous</button>
-    </div>
-    <div id="recent-controls">
-      <span>Ouverts il y a moins de</span>
-      <input type="number" id="recent-days-val" min="1" max="365" value="30">
-      <select id="recent-unit">
-        <option value="days">jours</option>
-        <option value="weeks">semaines</option>
-        <option value="months">mois</option>
-      </select>
+  <div id="period-control">
+    <button id="period-btn">
+      <span id="period-label">En cours</span>
+      <span class="period-chevron">▾</span>
+    </button>
+    <div id="period-popover" class="hidden">
+      <div class="period-option active" data-mode="current">
+        En cours <span class="period-hint">date active aujourd'hui</span>
+      </div>
+      <div class="period-option" data-mode="recent">
+        Ouverts il y a moins de
+        <span class="period-inline">
+          <input type="number" id="period-days-val" min="1" value="30">
+          <select id="period-days-unit">
+            <option value="1">jours</option>
+            <option value="7">semaines</option>
+            <option value="30">mois</option>
+          </select>
+        </span>
+      </div>
+      <div class="period-option" data-mode="all">
+        Tous les événements
+      </div>
     </div>
   </div>
 
@@ -779,8 +784,7 @@ let currentLat     = null;
 let currentLng     = null;
 let currentRadius  = 500;
 let activeCategory = 'all';
-let activePeriod   = 'en_cours';
-let recentDaysValue = 30;
+let periodMode     = 'current';
 let museumExposMap  = {};
 let museumEverParsedSet = new Set();
 let lastAllEvents   = [];
@@ -881,13 +885,16 @@ function formatDist(m) {
 }
 
 function getApiDays() {
-  if (activePeriod === 'recent') return Math.min(recentDaysValue, 365);
-  if (activePeriod === 'all')    return 365;
-  return 365; // 'en_cours' — fetch large, filter frontend-side
+  if (periodMode === 'recent') {
+    const val  = parseInt(document.getElementById('period-days-val').value) || 30;
+    const mult = parseInt(document.getElementById('period-days-unit').value) || 1;
+    return Math.min(val * mult, 365);
+  }
+  return 365;
 }
 
 function applyPeriodFilter(events) {
-  if (activePeriod !== 'en_cours') return events;
+  if (periodMode !== 'current') return events;
   const today = new Date().toISOString().split('T')[0];
   return events.filter(e => {
     const startOk = !e.date_debut || e.date_debut <= today;
@@ -1249,32 +1256,33 @@ function renderEvents(events) {
   }
 
   list.innerHTML = events.map(e => {
-    const subtitle  = [e.date || '', e.adresse || ''].filter(Boolean).join(' · ');
     const expos     = e.cat === 'musee'
       ? (Object.entries(museumExposMap).find(([k]) => normalizeName(k) === normalizeName(e.titre)) || [])[1] || []
       : [];
     const expoBadge = expos.length
-      ? `<div class="expo-badge">🖼 ${expos.length} expo${expos.length > 1 ? 's' : ''} en cours</div>`
+      ? `<span class="expo-badge">🖼 ${expos.length} expo${expos.length > 1 ? 's' : ''}</span>`
       : '';
     const catColor  = e.cat === 'musee' ? getMuseumColor(normalizeName(e.titre)) : getCatColor(e.cat);
-    const identDate = e.identified_date || e.date;
-    const newBadge  = isNew(identDate) ? `<span class="badge-new">Nouveau</span>` : '';
-    const freshW    = freshnessWidth(identDate);
+    const today     = new Date();
+    const identified = new Date(e.identified_date || e.date || today);
+    const ageDays   = Math.max(0, (today - identified) / 86400000);
+    const freshPct  = Math.max(0, 100 - (ageDays / 30) * 100).toFixed(0);
+    const showNew   = ageDays <= 7;
 
     return `
     <div class="event-card" data-id="${e.id}" onclick="focusEvent('${e.id}', ${e.lat ?? 0}, ${e.lng ?? 0})">
-      <div class="event-cat" style="color:${catColor}">${getCatEmoji(e.cat)} ${getCatLabel(e.cat)}</div>
-      <div class="event-title-row">
-        <div class="event-title">${e.titre}</div>
-        ${newBadge}
+      <div class="event-header">
+        <div class="event-cat" style="color:${catColor}">${getCatEmoji(e.cat)} ${getCatLabel(e.cat)}</div>
+        <div class="event-dist">${e.dist != null ? formatDist(e.dist) : '—'}</div>
       </div>
-      <div class="event-meta">
-        <span class="event-date">${subtitle}</span>
+      <div class="event-title">${e.titre}</div>
+      <div class="event-address">${e.adresse || '—'}</div>
+      <div class="event-badges">
+        ${showNew ? '<span class="badge-new">NOUVEAU</span>' : ''}
         ${e.prix ? `<span class="event-price ${e.prix === 'Gratuit' ? 'free' : ''}">${e.prix}</span>` : ''}
-        <span class="event-dist">${e.dist != null ? formatDist(e.dist) : '—'}</span>
+        ${expoBadge}
       </div>
-      ${expoBadge}
-      ${freshW > 0 ? `<div class="freshness-bar" style="width:${freshW}%"></div>` : ''}
+      <div class="freshness-bar" style="width:${freshPct}%"></div>
     </div>`;
   }).join('');
 }
@@ -1367,34 +1375,36 @@ document.querySelectorAll('.cat-btn').forEach(btn => {
 });
 
 // ══════════════════════════════════════════
-// PERIOD FILTER
+// PERIOD FILTER — dropdown popover
 // ══════════════════════════════════════════
-document.querySelectorAll('.period-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activePeriod = btn.dataset.period;
-    document.getElementById('recent-controls').classList.toggle('visible', activePeriod === 'recent');
-    if (currentLat) searchEvents();
+const periodPopover = document.getElementById('period-popover');
+const periodLabel   = document.getElementById('period-label');
+
+document.getElementById('period-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  periodPopover.classList.toggle('hidden');
+});
+
+document.addEventListener('click', () => periodPopover.classList.add('hidden'));
+
+document.querySelectorAll('.period-option').forEach(opt => {
+  opt.addEventListener('click', e => {
+    e.stopPropagation();
+    document.querySelectorAll('.period-option').forEach(o => o.classList.remove('active'));
+    opt.classList.add('active');
+    periodMode = opt.dataset.mode;
+    const labels = { current: 'En cours', recent: 'Récents', all: 'Tous' };
+    periodLabel.textContent = labels[periodMode];
+    periodPopover.classList.add('hidden');
+    if (currentLat !== null) searchEvents();
   });
 });
 
-function computeRecentDays() {
-  const val  = parseInt(document.getElementById('recent-days-val').value) || 30;
-  const unit = document.getElementById('recent-unit').value;
-  if (unit === 'weeks')  return val * 7;
-  if (unit === 'months') return val * 30;
-  return val;
-}
-
-document.getElementById('recent-days-val').addEventListener('change', () => {
-  recentDaysValue = computeRecentDays();
-  if (currentLat && activePeriod === 'recent') searchEvents();
+document.getElementById('period-days-val').addEventListener('change', () => {
+  if (currentLat && periodMode === 'recent') searchEvents();
 });
-
-document.getElementById('recent-unit').addEventListener('change', () => {
-  recentDaysValue = computeRecentDays();
-  if (currentLat && activePeriod === 'recent') searchEvents();
+document.getElementById('period-days-unit').addEventListener('change', () => {
+  if (currentLat && periodMode === 'recent') searchEvents();
 });
 
 // ══════════════════════════════════════════
