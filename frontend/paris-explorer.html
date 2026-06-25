@@ -862,6 +862,26 @@
   <div id="pegman-btn" draggable="true" title="Glisse-moi sur la carte">🚶</div>
 </div>
 
+<div id="period-popover" class="hidden">
+  <div class="period-option active" data-mode="current">
+    En cours <span class="period-hint">date active aujourd'hui</span>
+  </div>
+  <div class="period-option" data-mode="recent">
+    Ouverts il y a moins de
+    <span class="period-inline">
+      <input type="number" id="period-days-val" min="1" value="30">
+      <select id="period-days-unit">
+        <option value="1">jours</option>
+        <option value="7">semaines</option>
+        <option value="30">mois</option>
+      </select>
+    </span>
+  </div>
+  <div class="period-option" data-mode="all">
+    Tous les événements
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════
 // MAP INIT — CartoDB Voyager
@@ -1640,25 +1660,5 @@ mapContainer.addEventListener('drop', e => {
 
 map.on('click', e => placePin(e.latlng.lat, e.latlng.lng));
 </script>
-
-<div id="period-popover" class="hidden">
-  <div class="period-option active" data-mode="current">
-    En cours <span class="period-hint">date active aujourd'hui</span>
-  </div>
-  <div class="period-option" data-mode="recent">
-    Ouverts il y a moins de
-    <span class="period-inline">
-      <input type="number" id="period-days-val" min="1" value="30">
-      <select id="period-days-unit">
-        <option value="1">jours</option>
-        <option value="7">semaines</option>
-        <option value="30">mois</option>
-      </select>
-    </span>
-  </div>
-  <div class="period-option" data-mode="all">
-    Tous les événements
-  </div>
-</div>
 </body>
 </html>
