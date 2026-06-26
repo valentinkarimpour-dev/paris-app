@@ -1703,10 +1703,18 @@ document.querySelectorAll('.period-option').forEach(opt => {
 });
 
 document.getElementById('period-days-val').addEventListener('change', () => {
-  if (currentLat && periodMode === 'recent') searchEvents();
+  periodMode = 'recent';
+  if (currentLat) {
+    periodPopover.classList.add('hidden');
+    searchEvents();
+  }
 });
 document.getElementById('period-days-unit').addEventListener('change', () => {
-  if (currentLat && periodMode === 'recent') searchEvents();
+  periodMode = 'recent';
+  if (currentLat) {
+    periodPopover.classList.add('hidden');
+    searchEvents();
+  }
 });
 
 // ══════════════════════════════════════════
