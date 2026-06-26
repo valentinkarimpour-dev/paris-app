@@ -55,7 +55,7 @@ def _parse_address(soup: BeautifulSoup) -> str:
 def _scrape_listing() -> list[dict]:
     target_label = _current_month_label()
     today = date.today()
-    date_debut = f"{today.year}-{today.month:02d}"
+    date_debut = f"{today.year}-{today.month:02d}-01"
 
     try:
         resp = requests.get(LISTING, params={"order": "ouverture"}, headers=HEADERS, timeout=15)
