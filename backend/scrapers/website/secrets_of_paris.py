@@ -9,13 +9,21 @@ URL : https://secretsofparis.com/paris-events-calendar/whats-on-{month}-{year}/
 import asyncio
 import json
 import logging
-from datetime import datetime
+import re
+import unicodedata
+from datetime import datetime, timedelta
 
 from playwright.async_api import async_playwright
 
 from ..base import BaseScraper, _get_groq, _normalize_categorie
 
 logger = logging.getLogger(__name__)
+
+
+def _slugify(s: str) -> str:
+    nfkd = unicodedata.normalize("NFKD", s)
+    s = nfkd.encode("ascii", "ignore").decode("ascii").lower()
+    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
 
 MONTHS_EN = [
     "january","february","march","april","may","june",
@@ -55,13 +63,13 @@ Chaque élément du tableau :
 - categorie    : une valeur parmi : restaurant, bar, exposition, musee, galerie, cafe, brocante, vide-grenier, popup, wellness, rooftop, musique, marche, cinema, spectacle, sport, atelier, boutique
 
 Contenu :
-{page_text[:4000]}"""
+{page_text[:8000]}"""
 
     try:
         resp = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1500,
+            max_tokens=3000,
             temperature=0,
         )
         raw = resp.choices[0].message.content.strip()
@@ -139,15 +147,23 @@ async def _scrape_async() -> list[dict]:
     for extracted in extracted_list:
         if not extracted.get("titre"):
             continue
+        date_fin = None
+        if extracted.get("date_debut") and extracted.get("duree_jours"):
+            try:
+                d = datetime.strptime(extracted["date_debut"], "%Y-%m-%d")
+                date_fin = (d + timedelta(days=int(extracted["duree_jours"]))).strftime("%Y-%m-%d")
+            except Exception:
+                pass
         events.append({
             "titre":       extracted.get("titre", ""),
             "description": extracted.get("description", ""),
             "adresse":     extracted.get("adresse") or "",
             "date_debut":  extracted.get("date_debut"),
+            "date_fin":    date_fin,
             "duree_jours": extracted.get("duree_jours"),
             "categorie":   extracted.get("categorie", "autre"),
             "source":      "secrets_of_paris",
-            "url":         url,
+            "url":         url + "#" + _slugify(extracted.get("titre", "")),
         })
 
     logger.info("[secrets_of_paris] %d événements extraits", len(events))
