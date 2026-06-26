@@ -221,21 +221,30 @@
   }
 
   /* ── CATEGORY CHIPS ── */
-  #cat-scroll {
-    display: flex;
-    gap: 7px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    scrollbar-width: none;
-  }
-  #cat-scroll::-webkit-scrollbar { display: none; }
-  #cat-fade {
+  #map-cats {
     position: absolute;
-    right: 0;
-    width: 40px;
-    height: 32px;
-    background: linear-gradient(to right, transparent, var(--ink));
+    top: 16px;
+    left: 16px;
+    right: 90px;
+    z-index: 998;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
     pointer-events: none;
+  }
+  #map-cats .cat-btn {
+    pointer-events: all;
+    background: rgba(15, 17, 23, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-color: rgba(255,255,255,0.18);
+  }
+  #map-cats .cat-btn:hover {
+    background: rgba(15, 17, 23, 0.95);
+  }
+  #map-cats .cat-btn.active {
+    background: var(--green);
   }
 
   .cat-btn {
@@ -378,6 +387,28 @@
     font-size: 16px;
     font-weight: 700;
   }
+
+  #show-all-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--stone);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  #show-all-btn.active {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .event-card.out-of-zone { opacity: 0.4; }
+  .event-card.out-of-zone:hover { opacity: 0.7; }
 
   #events-list {
     flex: 1;
@@ -859,13 +890,6 @@
     </div>
     <input type="range" id="radius-slider" min="200" max="2000" step="100" value="500">
 
-    <div class="control-label" style="margin-top:4px;">Catégories</div>
-    <div id="cat-scroll"><button class="cat-btn active" data-cat="all" data-label="Tout">Tout</button><button class="cat-btn" data-cat="musique" data-label="🎵 Musique">🎵 Musique</button><button class="cat-btn" data-cat="exposition" data-label="🖼 Expo">🖼 Expo</button><button class="cat-btn" data-cat="vide-grenier" data-label="🪑 Vide-grenier">🪑 Vide-grenier</button><button class="cat-btn" data-cat="spectacle" data-label="🎭 Spectacle">🎭 Spectacle</button><button class="cat-btn" data-cat="atelier" data-label="🎨 Atelier">🎨 Atelier</button><button class="cat-btn" data-cat="restaurant" data-label="🍽 Restaurant">🍽 Restaurant</button><button class="cat-btn" data-cat="brocante" data-label="🪑 Brocante">🪑 Brocante</button><button class="cat-btn" data-cat="sport" data-label="🏃 Sport">🏃 Sport</button><button class="cat-btn" data-cat="cafe" data-label="☕ Café">☕ Café</button><button class="cat-btn" data-cat="bar" data-label="🍺 Bar">🍺 Bar</button><button class="cat-btn" data-cat="cinema" data-label="🎬 Cinéma">🎬 Cinéma</button><button class="cat-btn" data-cat="musee" data-label="🏛 Musée">🏛 Musée</button><button class="cat-btn" data-cat="popup" data-label="🛍 Popup">🛍 Popup</button><button class="cat-btn" data-cat="autre" data-label="📌 Autre">📌 Autre</button></div>
-    <div id="cat-fade"></div>
-
-    <div id="backend-warning" style="display:none;margin-top:12px;font-size:11px;color:var(--gold);letter-spacing:0.3px;">
-      ⚠️ Événements dynamiques indisponibles
-    </div>
   </div>
 
   <div class="sidebar-divider"></div>
@@ -884,6 +908,7 @@
     <div class="results-count">
       <strong id="count">—</strong> événements trouvés
     </div>
+    <button id="show-all-btn">Tout Paris</button>
   </div>
 
   <div id="events-list">
@@ -897,6 +922,26 @@
 <!-- MAP -->
 <div id="map-container">
   <div id="map"></div>
+  <div id="map-cats">
+    <button class="cat-btn active" data-cat="all" data-label="Tout">Tout</button>
+    <button class="cat-btn" data-cat="musique" data-label="🎵 Musique">🎵 Musique</button>
+    <button class="cat-btn" data-cat="exposition" data-label="🖼 Expo">🖼 Expo</button>
+    <button class="cat-btn" data-cat="vide-grenier" data-label="🪑 Vide-grenier">🪑 Vide-grenier</button>
+    <button class="cat-btn" data-cat="spectacle" data-label="🎭 Spectacle">🎭 Spectacle</button>
+    <button class="cat-btn" data-cat="atelier" data-label="🎨 Atelier">🎨 Atelier</button>
+    <button class="cat-btn" data-cat="restaurant" data-label="🍽 Restaurant">🍽 Restaurant</button>
+    <button class="cat-btn" data-cat="brocante" data-label="🪑 Brocante">🪑 Brocante</button>
+    <button class="cat-btn" data-cat="sport" data-label="🏃 Sport">🏃 Sport</button>
+    <button class="cat-btn" data-cat="cafe" data-label="☕ Café">☕ Café</button>
+    <button class="cat-btn" data-cat="bar" data-label="🍺 Bar">🍺 Bar</button>
+    <button class="cat-btn" data-cat="cinema" data-label="🎬 Cinéma">🎬 Cinéma</button>
+    <button class="cat-btn" data-cat="musee" data-label="🏛 Musée">🏛 Musée</button>
+    <button class="cat-btn" data-cat="popup" data-label="🛍 Popup">🛍 Popup</button>
+    <button class="cat-btn" data-cat="autre" data-label="📌 Autre">📌 Autre</button>
+  </div>
+  <div id="backend-warning" style="display:none; position:absolute; bottom:40px; left:50%; transform:translateX(-50%); z-index:999; font-size:11px; color:var(--gold); background:rgba(15,17,23,0.8); padding:6px 14px; border-radius:20px; white-space:nowrap;">
+    ⚠️ Événements dynamiques indisponibles
+  </div>
   <div id="loading"><span class="loader-text dot-anim">Chargement</span></div>
   <div id="map-hint">Glisse le 🚶 sur la carte · Ajuste le rayon avec le slider</div>
   <div id="drop-target-hint">Lâche ici pour explorer ce quartier</div>
@@ -1024,6 +1069,7 @@ let periodMode     = 'current';
 let museumExposMap  = {};
 let museumEverParsedSet = new Set();
 let lastAllEvents   = [];
+let showAll         = false;
 
 // ══════════════════════════════════════════
 // CAT CONFIG
@@ -1188,10 +1234,10 @@ function freshnessWidth(identifiedDate) {
 // ══════════════════════════════════════════
 // CUSTOM MARKER SVG (staggered bounce)
 // ══════════════════════════════════════════
-function makeMarkerIcon(color, cat, delay = 0) {
+function makeMarkerIcon(color, cat, delay = 0, opacity = 0.95) {
   const emoji = getCatEmoji(cat);
   const svg = `
-    <div style="animation: markerDrop 0.4s ease ${delay}ms both">
+    <div style="animation: markerDrop 0.4s ease ${delay}ms both; opacity: ${opacity}">
       <svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
         <circle cx="18" cy="18" r="17" fill="${color}" opacity="0.95"/>
         <path d="M18 36 L18 44" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
@@ -1496,13 +1542,41 @@ async function searchEvents() {
   // Filtre période (frontend)
   filtered = applyPeriodFilter(filtered);
 
+  // ── Fetch Tout Paris si toggle actif ──
+  let outOfZoneEvents = [];
+  if (showAll && currentLat !== null) {
+    try {
+      const parisEvents = await fetchBackendEvents(48.8566, 2.3522, 5000);
+      const inZoneIds = new Set(all.map(e => e.id));
+      outOfZoneEvents = parisEvents
+        .filter(e => !inZoneIds.has(e.id) && e.lat && e.lng)
+        .map(e => ({
+          ...e,
+          dist: Math.round(haversine(currentLat, currentLng, e.lat, e.lng)),
+          outOfZone: true,
+        }));
+    } catch {
+      console.warn('[showAll] fetch Paris échoué');
+    }
+  }
+
+  let filteredOutOfZone = activeCategory === 'all'
+    ? outOfZoneEvents
+    : outOfZoneEvents.filter(e => {
+        const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
+        return eCat === activeCategory;
+      });
+  filteredOutOfZone = applyPeriodFilter(filteredOutOfZone);
+
   updateCatCounts(filtered);
 
   filtered.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
+  filteredOutOfZone.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
+  const toRender = [...filtered, ...filteredOutOfZone];
 
   lastAllEvents = all;
-  renderEvents(filtered);
-  renderMarkers(filtered.filter(e => e.lat && e.lng));
+  renderEvents(toRender);
+  renderMarkers(toRender.filter(e => e.lat && e.lng));
 
   loading.classList.remove('visible');
   if (radiusCircle && radiusCircle._path) radiusCircle._path.classList.remove('pulsing');
@@ -1556,7 +1630,7 @@ function renderEvents(events) {
     const timingBlock = timingHtml ? `<div class="event-timing">${timingHtml}</div>` : '';
 
     return `
-    <div class="event-card" data-id="${e.id}" onclick="focusEvent('${e.id}', ${e.lat ?? 0}, ${e.lng ?? 0})">
+    <div class="event-card${e.outOfZone ? ' out-of-zone' : ''}" data-id="${e.id}" onclick="focusEvent('${e.id}', ${e.lat ?? 0}, ${e.lng ?? 0})">
       <div class="event-header">
         <div class="event-cat" style="color:${catColor}">${getCatEmoji(e.cat)} ${getCatLabel(e.cat)}</div>
         <div class="event-dist">${e.dist != null ? formatDist(e.dist) : '—'}</div>
@@ -1596,8 +1670,9 @@ function renderMarkers(events) {
           </div>`).join('')}
       </div>` : '';
 
-    const markerColor = e.cat === 'musee' ? getMuseumColor(normTitle) : getCatColor(e.cat);
-    const marker = L.marker([e.lat, e.lng], { icon: makeMarkerIcon(markerColor, e.cat, i * 60) })
+    const markerColor   = e.cat === 'musee' ? getMuseumColor(normTitle) : getCatColor(e.cat);
+    const markerOpacity = e.outOfZone ? 0.3 : 0.95;
+    const marker = L.marker([e.lat, e.lng], { icon: makeMarkerIcon(markerColor, e.cat, i * 60, markerOpacity) })
       .addTo(map);
 
     marker.bindPopup(`
@@ -1715,6 +1790,15 @@ document.getElementById('period-days-unit').addEventListener('change', () => {
     periodPopover.classList.add('hidden');
     searchEvents();
   }
+});
+
+// ══════════════════════════════════════════
+// TOUT PARIS TOGGLE
+// ══════════════════════════════════════════
+document.getElementById('show-all-btn').addEventListener('click', () => {
+  showAll = !showAll;
+  document.getElementById('show-all-btn').classList.toggle('active', showAll);
+  if (currentLat !== null) searchEvents();
 });
 
 // ══════════════════════════════════════════
