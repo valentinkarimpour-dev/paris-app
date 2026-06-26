@@ -1687,11 +1687,16 @@ document.addEventListener('click', e => {
 document.querySelectorAll('.period-option').forEach(opt => {
   opt.addEventListener('click', e => {
     e.stopPropagation();
+
     document.querySelectorAll('.period-option').forEach(o => o.classList.remove('active'));
     opt.classList.add('active');
     periodMode = opt.dataset.mode;
     const labels = { current: 'En cours', recent: 'Récents', all: 'Tous' };
     periodLabel.textContent = labels[periodMode];
+
+    // Si le clic vient de l'input ou du select, garder le popover ouvert
+    if (e.target.closest('.period-inline')) return;
+
     periodPopover.classList.add('hidden');
     if (currentLat !== null) searchEvents();
   });
