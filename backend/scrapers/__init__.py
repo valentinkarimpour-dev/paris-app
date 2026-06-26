@@ -7,9 +7,6 @@ from .website.lebonbon_food import LeBonbonFood
 from .website.lebonbon_drinks import LeBonbonDrinks
 from .website.parismusee_expos import ParisMuseeExpos
 from .website.museofile import MuseofileScraper
-from .website.nouveaux_cafes import NouveauxCafes
-from .website.nouveaux_restos import NouveauxRestos
-from .website.doitinparis import DoItInParis
 from .website.newtable import NewTable
 from .website.numero_popup import NumeroPopup
 from .website.secrets_of_paris import SecretsOfParis
