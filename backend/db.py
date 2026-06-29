@@ -445,3 +445,21 @@ def purge_old_events(keep_days: int = 365):
         conn.commit()
     if total:
         logger.info("Purge : %d events supprimés (identified_date < %s)", total, cutoff)
+
+    cutoff = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
+    purged_expired = 0
+    with _conn() as conn:
+        cur = conn.cursor()
+        for src in _SOURCE_TABLES:
+            table = f"events_{src}"
+            try:
+                cur.execute(
+                    f"DELETE FROM {table} "
+                    f"WHERE date_fin IS NOT NULL AND date_fin < ?",
+                    (cutoff,),
+                )
+                purged_expired += cur.rowcount
+            except Exception:
+                logger.warning("[purge] table %s introuvable ou erreur", table)
+        conn.commit()
+    logger.info("[purge] %d événements expirés supprimés (date_fin < %s)", purged_expired, cutoff)
