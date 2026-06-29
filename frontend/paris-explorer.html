@@ -1650,14 +1650,27 @@ async function searchEventsBrowse() {
   await fadeOutMarkers();
   const PARIS_LAT = 48.8566, PARIS_LNG = 2.3522;
   try {
+    const showingPermanents = showPermanents
+      || activeCategory === 'musee'
+      || activeCategory === 'cinema'
+      || periodMode === 'all';
+
     const params = new URLSearchParams({
       lat: PARIS_LAT, lng: PARIS_LNG, radius: 5000, days: getApiDays()
     });
     if (activeCategory && activeCategory !== 'all') params.set('cat', activeCategory);
-    const resp = await fetch(`${API_BASE}/events?${params}`);
+
+    const fetchOverpass = showingPermanents
+      && (!activeCategory || activeCategory === 'all' || OVERPASS_CATS.has(activeCategory));
+
+    const [resp, poisResult] = await Promise.all([
+      fetch(`${API_BASE}/events?${params}`),
+      fetchOverpass ? fetchPOI(PARIS_LAT, PARIS_LNG, 5000) : Promise.resolve([]),
+    ]);
+
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    let events = data.events.map(e => ({
+    let beEvents = data.events.map(e => ({
       id:              'be_' + e.id,
       titre:           e.titre,
       cat:             e.categorie || 'autre',
@@ -1673,11 +1686,18 @@ async function searchEventsBrowse() {
       identified_date: e.identified_date || e.date_debut || '',
       dist:            null,
     }));
+
+    const pois = Array.isArray(poisResult) ? poisResult : [];
+    const seen = new Set();
+    let events = [];
+    for (const e of [...pois, ...beEvents]) {
+      const key = `${(e.titre||'').toLowerCase().slice(0,30)}|${Math.round((e.lat??0)*10000)}|${Math.round((e.lng??0)*10000)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      events.push(e);
+    }
+
     events = applyPeriodFilter(events);
-    const showingPermanents = showPermanents
-      || activeCategory === 'musee'
-      || activeCategory === 'cinema'
-      || periodMode === 'all';
     if (!showingPermanents) {
       events = events.filter(e => e.source !== 'OpenStreetMap');
     }
