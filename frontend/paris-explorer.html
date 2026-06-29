@@ -751,6 +751,10 @@
     border-color: var(--green);
     box-shadow: 0 4px 24px var(--green-glow);
   }
+  #pegman-btn.pinned {
+    border-color: var(--green);
+    box-shadow: 0 4px 24px var(--green-glow), 0 0 0 3px rgba(0,246,111,0.2);
+  }
 
   /* ── LEAFLET CUSTOM ── */
   .leaflet-popup-content-wrapper {
@@ -938,7 +942,7 @@
   <!-- PERIOD FILTER -->
   <div id="period-control">
     <button id="period-btn">
-      <span id="period-label">Nouveaux</span>
+      <span id="period-label">Ouverts aujourd'hui</span>
       <span class="period-chevron">▾</span>
     </button>
   </div>
@@ -987,17 +991,7 @@
   <div id="map-hint">Glisse le 🚶 sur la carte · Ajuste le rayon avec le slider</div>
   <div id="drop-target-hint">Lâche ici pour explorer ce quartier</div>
   <button id="eiffel-btn" class="active" title="Vue Paris">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 48" width="22" height="32" fill="var(--cream)">
-      <rect x="15" y="0" width="2" height="5"/>
-      <polygon points="13,5 11,14 21,14 19,5"/>
-      <rect x="9" y="15" width="14" height="2"/>
-      <polygon points="9,17 6,28 26,28 23,17"/>
-      <rect x="5" y="28" width="22" height="2.5"/>
-      <polygon points="5,30.5 1,44 31,44 27,30.5"/>
-      <rect x="1" y="38" width="30" height="2.5"/>
-      <rect x="1" y="44" width="8" height="4"/>
-      <rect x="23" y="44" width="8" height="4"/>
-    </svg>
+    <img src="img/tour-eiffel.jpg" alt="Vue Paris" style="width:22px;height:32px;object-fit:contain;filter:brightness(0) invert(1);">
   </button>
   <button id="geolocate-btn" title="Ma position">📍</button>
   <div id="pegman-btn" draggable="true" title="Glisse-moi sur la carte">🚶</div>
@@ -1005,10 +999,10 @@
 
 <div id="period-popover" class="hidden">
   <div class="period-option active" data-mode="nouveaux">
-    Nouveaux <span class="period-hint">ouvre aujourd'hui</span>
+    Ouverts aujourd'hui
   </div>
   <div class="period-option" data-mode="current">
-    En cours <span class="period-hint">entre date début et fin</span>
+    En cours
   </div>
   <div class="period-option" data-mode="recent">
     Ouverts il y a moins de
@@ -1372,6 +1366,7 @@ function updateCatCounts(allEvents) {
 // ══════════════════════════════════════════
 function placePin(lat, lng) {
   document.getElementById('eiffel-btn').classList.remove('active');
+  document.getElementById('pegman-btn').classList.add('pinned');
   currentLat = lat;
   currentLng = lng;
 
@@ -1403,6 +1398,7 @@ function resetToBrowse() {
   currentLat = null;
   currentLng = null;
   document.getElementById('eiffel-btn').classList.add('active');
+  document.getElementById('pegman-btn').classList.remove('pinned');
   document.getElementById('map-hint').classList.remove('hidden');
   searchEventsBrowse();
 }
@@ -1891,7 +1887,7 @@ document.querySelectorAll('.period-option').forEach(opt => {
     document.querySelectorAll('.period-option').forEach(o => o.classList.remove('active'));
     opt.classList.add('active');
     periodMode = opt.dataset.mode;
-    const labels = { nouveaux: 'Nouveaux', current: 'En cours', recent: 'Récents', all: 'Tous' };
+    const labels = { nouveaux: 'Ouverts aujourd\'hui', current: 'En cours', recent: 'Récents', all: 'Tous' };
     periodLabel.textContent = labels[periodMode];
 
     // Si le clic vient de l'input ou du select, garder le popover ouvert
