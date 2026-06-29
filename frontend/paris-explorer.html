@@ -1575,9 +1575,9 @@ async function searchEvents() {
   if (radiusCircle && radiusCircle._path) radiusCircle._path.classList.add('pulsing');
   await fadeOutMarkers();
 
-  const fetchOverpass = activeCategory === 'all' || OVERPASS_CATS.has(activeCategory);
-  const fetchBackend  = activeCategory === 'all' || BACKEND_CATS.has(activeCategory) || (activeCategory || '').startsWith('autre');
-  const fetchMusee    = activeCategory === 'all' || activeCategory === 'musee';
+  const fetchOverpass = !activeCategory || activeCategory === 'all' || OVERPASS_CATS.has(activeCategory);
+  const fetchBackend  = !activeCategory || activeCategory === 'all' || BACKEND_CATS.has(activeCategory) || (activeCategory || '').startsWith('autre');
+  const fetchMusee    = !activeCategory || activeCategory === 'all' || activeCategory === 'musee';
 
   const [overpassResult, backendResult, museeResult] = await Promise.allSettled([
     fetchOverpass ? fetchPOI(currentLat, currentLng, currentRadius) : Promise.resolve([]),
@@ -1616,7 +1616,7 @@ async function searchEvents() {
   }
 
   // Filtre catégorie
-  let filtered = activeCategory === 'all'
+  let filtered = (!activeCategory || activeCategory === 'all')
     ? all
     : all.filter(e => {
         const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
