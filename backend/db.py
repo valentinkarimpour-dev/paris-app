@@ -426,40 +426,44 @@ def log_category_suggestion(suggestion: str) -> None:
         conn.commit()
 
 
-def purge_old_events(keep_days: int = 365):
+def purge_old_events(keep_days: int = 365) -> dict:
     """
-    Supprime uniquement les events identifiés il y a plus de keep_days jours.
-    Par défaut 1 an — les vieilles entrées restent longtemps en DB.
+    Supprime les events trop anciens (identified_date) et les events expirés (date_fin).
+    Retourne les compteurs par source pour le reporting.
     """
-    cutoff = (datetime.now() - timedelta(days=keep_days)).strftime("%Y-%m-%d")
+    # 1. Purge par ancienneté
+    cutoff_old = (datetime.now() - timedelta(days=keep_days)).strftime("%Y-%m-%d")
     with _conn() as conn:
-        total = 0
+        total_old = 0
         for src in _SOURCE_TABLES:
-            total += conn.execute(
-                f"DELETE FROM events_{src} WHERE identified_date < ?", (cutoff,)
+            total_old += conn.execute(
+                f"DELETE FROM events_{src} WHERE identified_date < ?", (cutoff_old,)
             ).rowcount
-        # Garde aussi l'ancienne table pour ne pas perdre des données legacy
-        total += conn.execute(
-            "DELETE FROM events WHERE identified_date < ?", (cutoff,)
+        total_old += conn.execute(
+            "DELETE FROM events WHERE identified_date < ?", (cutoff_old,)
         ).rowcount
         conn.commit()
-    if total:
-        logger.info("Purge : %d events supprimés (identified_date < %s)", total, cutoff)
+    if total_old:
+        logger.info("Purge : %d events supprimés (identified_date < %s)", total_old, cutoff_old)
 
-    cutoff = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
-    purged_expired = 0
+    # 2. Purge par date_fin dépassée — retourne le détail par source
+    cutoff_exp = (datetime.utcnow() - timedelta(days=1)).strftime("%Y-%m-%d")
+    deleted_by_source = {}
     with _conn() as conn:
         cur = conn.cursor()
         for src in _SOURCE_TABLES:
             table = f"events_{src}"
             try:
                 cur.execute(
-                    f"DELETE FROM {table} "
-                    f"WHERE date_fin IS NOT NULL AND date_fin < ?",
-                    (cutoff,),
+                    f"DELETE FROM {table} WHERE date_fin IS NOT NULL AND date_fin < ?",
+                    (cutoff_exp,),
                 )
-                purged_expired += cur.rowcount
+                if cur.rowcount:
+                    deleted_by_source[src] = cur.rowcount
             except Exception:
                 logger.warning("[purge] table %s introuvable ou erreur", table)
         conn.commit()
-    logger.info("[purge] %d événements expirés supprimés (date_fin < %s)", purged_expired, cutoff)
+    total_exp = sum(deleted_by_source.values())
+    logger.info("[purge] %d événements expirés supprimés (date_fin < %s)", total_exp, cutoff_exp)
+
+    return {"deleted_by_source": deleted_by_source, "total_deleted": total_exp}

@@ -123,8 +123,8 @@ def list_scrapers():
 
 @app.post("/purge")
 def purge_events():
-    db.purge_old_events()
-    return {"status": "ok"}
+    result = db.purge_old_events()
+    return {"status": "ok", **result}
 
 
 @app.get("/stats")
