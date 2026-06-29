@@ -1264,6 +1264,7 @@ function applyPeriodFilter(events) {
 
   if (periodMode === 'nouveaux') {
     return events.filter(e => {
+      if (e.cat === 'musee') return false;
       if (!e.date_debut && !e.date_fin) return true;
       return e.date_debut === today;
     });
