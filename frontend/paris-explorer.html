@@ -709,7 +709,48 @@
     box-shadow: 0 4px 24px var(--green-glow);
   }
 
-  #pegman-btn.dragging { opacity: 0.5; cursor: grabbing; }
+  #pegman-btn.dragging {
+    cursor: grabbing;
+    animation: pegmanPulse 0.7s ease-in-out infinite;
+  }
+  @keyframes pegmanPulse {
+    0%, 100% {
+      transform: scale(1);
+      border-color: rgba(255,255,255,0.15);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+    50% {
+      transform: scale(1.18);
+      border-color: var(--green);
+      box-shadow: 0 4px 24px var(--green-glow), 0 0 0 6px rgba(0,246,111,0.15);
+    }
+  }
+  #eiffel-btn {
+    position: absolute;
+    top: 20px;
+    right: 82px;
+    z-index: 999;
+    width: 52px;
+    height: 52px;
+    background: var(--ink);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  #eiffel-btn:hover {
+    border-color: var(--green);
+    transform: scale(1.05);
+    box-shadow: 0 4px 24px var(--green-glow);
+  }
+  #eiffel-btn.active {
+    border-color: var(--green);
+    box-shadow: 0 4px 24px var(--green-glow);
+  }
 
   /* ── LEAFLET CUSTOM ── */
   .leaflet-popup-content-wrapper {
@@ -945,6 +986,19 @@
   <div id="loading"><span class="loader-text dot-anim">Chargement</span></div>
   <div id="map-hint">Glisse le 🚶 sur la carte · Ajuste le rayon avec le slider</div>
   <div id="drop-target-hint">Lâche ici pour explorer ce quartier</div>
+  <button id="eiffel-btn" class="active" title="Vue Paris">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 48" width="22" height="32" fill="var(--cream)">
+      <rect x="15" y="0" width="2" height="5"/>
+      <polygon points="13,5 11,14 21,14 19,5"/>
+      <rect x="9" y="15" width="14" height="2"/>
+      <polygon points="9,17 6,28 26,28 23,17"/>
+      <rect x="5" y="28" width="22" height="2.5"/>
+      <polygon points="5,30.5 1,44 31,44 27,30.5"/>
+      <rect x="1" y="38" width="30" height="2.5"/>
+      <rect x="1" y="44" width="8" height="4"/>
+      <rect x="23" y="44" width="8" height="4"/>
+    </svg>
+  </button>
   <button id="geolocate-btn" title="Ma position">📍</button>
   <div id="pegman-btn" draggable="true" title="Glisse-moi sur la carte">🚶</div>
 </div>
@@ -1317,6 +1371,7 @@ function updateCatCounts(allEvents) {
 // PLACE PIN & SEARCH
 // ══════════════════════════════════════════
 function placePin(lat, lng) {
+  document.getElementById('eiffel-btn').classList.remove('active');
   currentLat = lat;
   currentLng = lng;
 
@@ -1340,6 +1395,16 @@ function placePin(lat, lng) {
   setTimeout(() => refreshColors(), 10000);
 
   document.getElementById('map-hint').classList.add('hidden');
+}
+
+function resetToBrowse() {
+  if (pinMarker) { map.removeLayer(pinMarker); pinMarker = null; }
+  if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
+  currentLat = null;
+  currentLng = null;
+  document.getElementById('eiffel-btn').classList.add('active');
+  document.getElementById('map-hint').classList.remove('hidden');
+  searchEventsBrowse();
 }
 
 function updateCircle(lat, lng) {
@@ -1859,6 +1924,10 @@ document.getElementById('show-all-btn').addEventListener('click', () => {
   showAll = !showAll;
   document.getElementById('show-all-btn').classList.toggle('active', showAll);
   if (currentLat !== null) searchEvents();
+});
+
+document.getElementById('eiffel-btn').addEventListener('click', () => {
+  resetToBrowse();
 });
 
 // ══════════════════════════════════════════
