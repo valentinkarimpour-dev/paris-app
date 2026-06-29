@@ -121,6 +121,12 @@ def list_scrapers():
     return {"scrapers": [s.name for s in ALL_SCRAPERS]}
 
 
+@app.post("/purge")
+def purge_events():
+    db.purge_old_events()
+    return {"status": "ok"}
+
+
 @app.get("/stats")
 def stats():
     with db._conn() as conn:
