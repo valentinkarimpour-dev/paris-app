@@ -12,6 +12,7 @@ from typing import Optional
 from fastapi import BackgroundTasks, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -45,7 +46,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-FRONTEND = Path(__file__).parent.parent / "frontend" / "paris-explorer.html"
+FRONTEND   = Path(__file__).parent.parent / "frontend" / "paris-explorer.html"
+STATIC_DIR = Path(__file__).parent.parent / "frontend" / "img"
+
+if STATIC_DIR.exists():
+    app.mount("/img", StaticFiles(directory=str(STATIC_DIR)), name="img")
 
 
 @app.get("/")
