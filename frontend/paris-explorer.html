@@ -953,7 +953,7 @@
     <div class="results-count">
       <strong id="count">—</strong> événements trouvés
     </div>
-    <button id="show-all-btn">Tout Paris</button>
+    <button id="show-all-btn">incl. permanents</button>
   </div>
 
   <div id="events-list">
@@ -1120,7 +1120,7 @@ let periodMode     = 'nouveaux';
 let museumExposMap  = {};
 let museumEverParsedSet = new Set();
 let lastAllEvents   = [];
-let showAll         = false;
+let showPermanents  = false;
 
 // ══════════════════════════════════════════
 // CAT CONFIG
@@ -1264,7 +1264,6 @@ function applyPeriodFilter(events) {
 
   if (periodMode === 'nouveaux') {
     return events.filter(e => {
-      if (e.cat === 'musee') return false;
       if (!e.date_debut && !e.date_fin) return true;
       return e.date_debut === today;
     });
@@ -1612,6 +1611,17 @@ async function searchEvents() {
     all.push(e);
   }
 
+  // ── Filtre permanents (musées, cinémas OSM) ──
+  const showingPermanents = showPermanents
+    || activeCategory === 'musee'
+    || activeCategory === 'cinema'
+    || periodMode === 'all';
+  if (!showingPermanents) {
+    for (let i = all.length - 1; i >= 0; i--) {
+      if (all[i].source === 'OpenStreetMap') all.splice(i, 1);
+    }
+  }
+
   // Filtre catégorie
   let filtered = (!activeCategory || activeCategory === 'all')
     ? all
@@ -1623,41 +1633,13 @@ async function searchEvents() {
   // Filtre période (frontend)
   filtered = applyPeriodFilter(filtered);
 
-  // ── Fetch Tout Paris si toggle actif ──
-  let outOfZoneEvents = [];
-  if (showAll && currentLat !== null) {
-    try {
-      const parisEvents = await fetchBackendEvents(48.8566, 2.3522, 5000);
-      const inZoneIds = new Set(all.map(e => e.id));
-      outOfZoneEvents = parisEvents
-        .filter(e => !inZoneIds.has(e.id) && e.lat && e.lng)
-        .map(e => ({
-          ...e,
-          dist: Math.round(haversine(currentLat, currentLng, e.lat, e.lng)),
-          outOfZone: true,
-        }));
-    } catch {
-      console.warn('[showAll] fetch Paris échoué');
-    }
-  }
-
-  let filteredOutOfZone = activeCategory === 'all'
-    ? outOfZoneEvents
-    : outOfZoneEvents.filter(e => {
-        const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
-        return eCat === activeCategory;
-      });
-  filteredOutOfZone = applyPeriodFilter(filteredOutOfZone);
-
   updateCatCounts(filtered);
 
   filtered.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
-  filteredOutOfZone.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
-  const toRender = [...filtered, ...filteredOutOfZone];
 
   lastAllEvents = all;
-  renderEvents(toRender);
-  renderMarkers(toRender.filter(e => e.lat && e.lng));
+  renderEvents(filtered);
+  renderMarkers(filtered.filter(e => e.lat && e.lng));
 
   loading.classList.remove('visible');
   if (radiusCircle && radiusCircle._path) radiusCircle._path.classList.remove('pulsing');
@@ -1692,6 +1674,13 @@ async function searchEventsBrowse() {
       dist:            null,
     }));
     events = applyPeriodFilter(events);
+    const showingPermanents = showPermanents
+      || activeCategory === 'musee'
+      || activeCategory === 'cinema'
+      || periodMode === 'all';
+    if (!showingPermanents) {
+      events = events.filter(e => e.source !== 'OpenStreetMap');
+    }
     updateCatCounts(events);
     renderEvents(events);
     renderMarkers(events.filter(e => e.lat && e.lng));
@@ -1916,12 +1905,13 @@ document.getElementById('period-days-unit').addEventListener('change', () => {
 });
 
 // ══════════════════════════════════════════
-// TOUT PARIS TOGGLE
+// TOGGLE PERMANENTS
 // ══════════════════════════════════════════
 document.getElementById('show-all-btn').addEventListener('click', () => {
-  showAll = !showAll;
-  document.getElementById('show-all-btn').classList.toggle('active', showAll);
+  showPermanents = !showPermanents;
+  document.getElementById('show-all-btn').classList.toggle('active', showPermanents);
   if (currentLat !== null) searchEvents();
+  else searchEventsBrowse();
 });
 
 document.getElementById('eiffel-btn').addEventListener('click', () => {
