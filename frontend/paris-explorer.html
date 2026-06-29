@@ -1845,7 +1845,8 @@ document.getElementById('radius-slider').addEventListener('input', e => {
 // CATEGORY FILTERS
 // ══════════════════════════════════════════
 document.querySelectorAll('.cat-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     activeCategory = btn.dataset.cat;
