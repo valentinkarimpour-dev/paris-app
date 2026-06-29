@@ -31,4 +31,4 @@ echo "────────────────────────�
 
 python3 -m datasette backend/events.db --port 8001 &
 
-uvicorn backend.main:app --reload --port 8000
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000

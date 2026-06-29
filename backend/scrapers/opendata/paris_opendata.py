@@ -61,14 +61,19 @@ def _map_tags(tags_str: str | None) -> str:
     return _normalize_categorie(tags[0]) if tags else "autre"
 
 
-def _parse_paris_date(dt_str: str | None) -> str | None:
+def _parse_paris_date(dt_str: str | None, is_end_date: bool = False) -> str | None:
     if not dt_str:
         return None
     try:
         dt = datetime.fromisoformat(dt_str)
         if dt.tzinfo is None:
-            return dt.date().isoformat()
-        return dt.astimezone(_PARIS).date().isoformat()
+            result = dt.date()
+        else:
+            dt_paris = dt.astimezone(_PARIS)
+            if is_end_date and dt_paris.hour == 0 and dt_paris.minute == 0:
+                dt_paris = dt_paris - timedelta(days=1)
+            result = dt_paris.date()
+        return result.isoformat()
     except (ValueError, TypeError):
         return dt_str[:10]
 
@@ -132,11 +137,18 @@ class ParisOpenData(BaseScraper):
                 lat = lat_lon.get("lat")
                 lng = lat_lon.get("lon")
 
+                if not adresse or lat is None or lng is None:
+                    logger.debug(
+                        "[paris_opendata] ignoré (données incomplètes) : %s",
+                        rec.get("title") or ev_id,
+                    )
+                    continue
+
                 # Dates
                 date_start = rec.get("date_start", "")
                 date_end   = rec.get("date_end", "")
-                date_debut = _parse_paris_date(date_start)
-                date_fin   = _parse_paris_date(date_end)
+                date_debut = _parse_paris_date(date_start, is_end_date=False)
+                date_fin   = _parse_paris_date(date_end,   is_end_date=True)
 
                 duree_jours = None
                 if date_debut and date_fin:

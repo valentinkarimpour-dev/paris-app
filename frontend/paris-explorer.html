@@ -897,7 +897,7 @@
   <!-- PERIOD FILTER -->
   <div id="period-control">
     <button id="period-btn">
-      <span id="period-label">En cours</span>
+      <span id="period-label">Nouveaux</span>
       <span class="period-chevron">▾</span>
     </button>
   </div>
@@ -923,7 +923,7 @@
 <div id="map-container">
   <div id="map"></div>
   <div id="map-cats">
-    <button class="cat-btn active" data-cat="all" data-label="Tout">Tout</button>
+    <button class="cat-btn" data-cat="all" data-label="Tout">Tout</button>
     <button class="cat-btn" data-cat="musique" data-label="🎵 Musique">🎵 Musique</button>
     <button class="cat-btn" data-cat="exposition" data-label="🖼 Expo">🖼 Expo</button>
     <button class="cat-btn" data-cat="vide-grenier" data-label="🪑 Vide-grenier">🪑 Vide-grenier</button>
@@ -950,8 +950,11 @@
 </div>
 
 <div id="period-popover" class="hidden">
-  <div class="period-option active" data-mode="current">
-    En cours <span class="period-hint">date active aujourd'hui</span>
+  <div class="period-option active" data-mode="nouveaux">
+    Nouveaux <span class="period-hint">ouvre aujourd'hui</span>
+  </div>
+  <div class="period-option" data-mode="current">
+    En cours <span class="period-hint">entre date début et fin</span>
   </div>
   <div class="period-option" data-mode="recent">
     Ouverts il y a moins de
@@ -1064,8 +1067,8 @@ let eventMarkers   = [];
 let currentLat     = null;
 let currentLng     = null;
 let currentRadius  = 500;
-let activeCategory = 'all';
-let periodMode     = 'current';
+let activeCategory = '';
+let periodMode     = 'nouveaux';
 let museumExposMap  = {};
 let museumEverParsedSet = new Set();
 let lastAllEvents   = [];
@@ -1208,14 +1211,26 @@ function getApiDays() {
 }
 
 function applyPeriodFilter(events) {
-  if (periodMode !== 'current') return events;
-  const today = new Date().toISOString().split('T')[0];
-  return events.filter(e => {
-    if (!e.date_debut && !e.date_fin) return true;
-    if (e.date_debut && e.date_debut > today) return false;
-    if (e.date_fin && e.date_fin < today) return false;
-    return true;
-  });
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+  if (periodMode === 'nouveaux') {
+    return events.filter(e => {
+      if (!e.date_debut && !e.date_fin) return true;
+      return e.date_debut === today;
+    });
+  }
+
+  if (periodMode === 'current') {
+    return events.filter(e => {
+      if (!e.date_debut && !e.date_fin) return true;
+      if (e.date_debut && e.date_debut > today) return false;
+      if (e.date_fin && e.date_fin < today) return false;
+      return true;
+    });
+  }
+
+  return events;
 }
 
 function isNew(identifiedDate) {
@@ -1522,10 +1537,14 @@ async function searchEvents() {
   else console.warn('Museum expos indisponible:', museeResult.reason);
 
   // Merge + déduplication
+  const PERM_CATS = new Set(['restaurant','bar','cafe','boutique','wellness','rooftop','musee']);
   const seen = new Set();
   const all  = [];
   for (const e of [...pois, ...beEvents]) {
-    const key = `${e.titre.toLowerCase().slice(0,30)}|${Math.round((e.lat??0)*1000)}|${Math.round((e.lng??0)*1000)}`;
+    const locKey = `${Math.round((e.lat??0)*10000)}|${Math.round((e.lng??0)*10000)}`;
+    const key = PERM_CATS.has(e.cat)
+      ? `${e.cat}|${locKey}`
+      : `${(e.titre||'').toLowerCase().slice(0,30)}|${locKey}`;
     if (seen.has(key)) continue;
     seen.add(key);
     all.push(e);
@@ -1580,6 +1599,43 @@ async function searchEvents() {
 
   loading.classList.remove('visible');
   if (radiusCircle && radiusCircle._path) radiusCircle._path.classList.remove('pulsing');
+}
+
+async function searchEventsBrowse() {
+  showSkeletons();
+  await fadeOutMarkers();
+  const PARIS_LAT = 48.8566, PARIS_LNG = 2.3522;
+  try {
+    const params = new URLSearchParams({
+      lat: PARIS_LAT, lng: PARIS_LNG, radius: 5000, days: getApiDays()
+    });
+    if (activeCategory && activeCategory !== 'all') params.set('cat', activeCategory);
+    const resp = await fetch(`${API_BASE}/events?${params}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    let events = data.events.map(e => ({
+      id:              'be_' + e.id,
+      titre:           e.titre,
+      cat:             e.categorie || 'autre',
+      adresse:         e.adresse || '',
+      lat:             e.lat,
+      lng:             e.lng,
+      prix:            e.prix || '',
+      url:             e.url || '',
+      source:          e.source,
+      date:            e.date_debut || '',
+      date_debut:      e.date_debut || '',
+      date_fin:        e.date_fin   || '',
+      identified_date: e.identified_date || e.date_debut || '',
+      dist:            null,
+    }));
+    events = applyPeriodFilter(events);
+    updateCatCounts(events);
+    renderEvents(events);
+    renderMarkers(events.filter(e => e.lat && e.lng));
+  } catch (err) {
+    console.warn('[searchEventsBrowse]', err);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1731,7 +1787,11 @@ document.querySelectorAll('.cat-btn').forEach(btn => {
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     activeCategory = btn.dataset.cat;
-    searchEvents();
+    if (currentLat !== null) {
+      searchEvents();
+    } else {
+      searchEventsBrowse();
+    }
   });
 });
 
@@ -1766,7 +1826,7 @@ document.querySelectorAll('.period-option').forEach(opt => {
     document.querySelectorAll('.period-option').forEach(o => o.classList.remove('active'));
     opt.classList.add('active');
     periodMode = opt.dataset.mode;
-    const labels = { current: 'En cours', recent: 'Récents', all: 'Tous' };
+    const labels = { nouveaux: 'Nouveaux', current: 'En cours', recent: 'Récents', all: 'Tous' };
     periodLabel.textContent = labels[periodMode];
 
     // Si le clic vient de l'input ou du select, garder le popover ouvert
@@ -1854,6 +1914,8 @@ document.getElementById('geolocate-btn').addEventListener('click', () => {
     { timeout: 8000, maximumAge: 60000 }
   );
 });
+// Chargement initial — tous les événements Nouveaux sur Paris
+searchEventsBrowse();
 </script>
 </body>
 </html>
