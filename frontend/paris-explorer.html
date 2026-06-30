@@ -1376,7 +1376,6 @@ function updateCatCounts(allEvents) {
       const count = counts[cat] || 0;
       btn.textContent = count > 0 ? `${label} ${count}` : label;
       btn.style.opacity = count > 0 ? '1' : '0.4';
-      btn.style.pointerEvents = count > 0 ? '' : 'none';
     }
   });
 }
@@ -1887,6 +1886,7 @@ document.getElementById('radius-slider').addEventListener('input', e => {
 document.querySelectorAll('.cat-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (btn.style.opacity === '0.4') return;
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     activeCategory = btn.dataset.cat;
