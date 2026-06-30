@@ -1262,6 +1262,9 @@ function applyPeriodFilter(events) {
   const d = new Date();
   const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
+  // Règle absolue tous modes : jamais afficher un event pas encore commencé
+  events = events.filter(e => !e.date_debut || e.date_debut <= today);
+
   if (periodMode === 'nouveaux') {
     return events.filter(e => {
       if (!e.date_debut && !e.date_fin) return true;
@@ -1635,7 +1638,12 @@ async function searchEvents() {
 
   updateCatCounts(filtered);
 
-  filtered.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
+  filtered.sort((a, b) => {
+    const aFin = a.date_fin || '9999-99-99';
+    const bFin = b.date_fin || '9999-99-99';
+    if (aFin !== bFin) return aFin < bFin ? -1 : 1;
+    return (a.dist ?? Infinity) - (b.dist ?? Infinity);
+  });
 
   lastAllEvents = all;
   renderEvents(filtered);
@@ -1701,6 +1709,12 @@ async function searchEventsBrowse() {
     if (!showingPermanents) {
       events = events.filter(e => e.source !== 'OpenStreetMap');
     }
+    events.sort((a, b) => {
+      const aFin = a.date_fin || '9999-99-99';
+      const bFin = b.date_fin || '9999-99-99';
+      if (aFin !== bFin) return aFin < bFin ? -1 : 1;
+      return (a.dist ?? Infinity) - (b.dist ?? Infinity);
+    });
     updateCatCounts(events);
     renderEvents(events);
     renderMarkers(events.filter(e => e.lat && e.lng));
