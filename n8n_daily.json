@@ -49,40 +49,56 @@
     },
     {
       "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/purge",
+        "options": {}
+      },
+      "name": "Purge Old Events",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300],
+      "id": "node8"
+    },
+    {
+      "parameters": {
         "conditions": {
-          "string": [{ "value1": "={{ $json.status }}", "operation": "equals", "value2": "done" }]
+          "string": [{
+            "value1": "={{ $('Get Last Run').item.json.status }}",
+            "operation": "equal",
+            "value2": "done"
+          }]
         }
       },
       "name": "IF Success",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1120, 300],
+      "position": [1340, 300],
       "id": "node5"
     },
     {
       "parameters": {
         "select": "channel",
         "channelId": { "value": "paris-app-sorties", "__rl": true, "mode": "name" },
-        "text": ":white_check_mark: [DAILY] — run terminé\n\n• Events insérés : {{ $json.total_inserted }}\n• Scrapers OK : {{ $json.completed }}/{{ $json.total_scrapers }}\n• Déclenché à : {{ $json.triggered_at }}\n_Automated with this n8n workflow_",
+        "text": "=:white_check_mark: [DAILY] — run terminé\n\n• Events insérés : {{ $('Get Last Run').item.json.total_inserted }}\n• Scrapers OK : {{ $('Get Last Run').item.json.completed }}/{{ $('Get Last Run').item.json.total_scrapers }}\n• Déclenché à : {{ $('Get Last Run').item.json.triggered_at }}\n\nInsérés par source :\n{{ Object.entries($('Get Last Run').item.json.scrapers).filter(([k,v]) => v.inserted > 0).map(([k,v]) => `• ${k}: +${v.inserted}`).join('\\n') || '_aucun_' }}\n\nSupprimés (expirés) :\n{{ Object.entries($('Purge Old Events').item.json.deleted_by_source).map(([k,v]) => `• ${k}: -${v}`).join('\\n') || '_aucun_' }}\n_Automated with this n8n workflow_",
         "otherOptions": {}
       },
       "name": "Slack OK",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
-      "position": [1340, 180],
+      "position": [1560, 180],
       "id": "node6"
     },
     {
       "parameters": {
         "select": "channel",
         "channelId": { "value": "paris-app-sorties", "__rl": true, "mode": "name" },
-        "text": ":x: [DAILY] — erreur détectée\n\n• Scrapers en échec : {{ $json.errors }}/{{ $json.total_scrapers }}\n• Status : {{ $json.status }}\n• Déclenché à : {{ $json.triggered_at }}\n_Automated with this n8n workflow_",
+        "text": "=:x: [DAILY] — erreur détectée\n\n• Scrapers en échec : {{ $('Get Last Run').item.json.errors }}/{{ $('Get Last Run').item.json.total_scrapers }}\n• Status : {{ $('Get Last Run').item.json.status }}\n• Déclenché à : {{ $('Get Last Run').item.json.triggered_at }}\n\nDétail des échecs :\n{{ Object.entries($('Get Last Run').item.json.scrapers).filter(([k,v]) => v.status !== 'done').map(([k,v]) => `• ${k}: ${v.error_msg}`).join('\\n') || '_aucun détail_' }}\n_Automated with this n8n workflow_",
         "otherOptions": {}
       },
       "name": "Slack Error",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
-      "position": [1340, 420],
+      "position": [1560, 420],
       "id": "node7"
     }
   ],
@@ -90,7 +106,8 @@
     "Schedule": { "main": [[{ "node": "Run All Scrapers", "type": "main", "index": 0 }]] },
     "Run All Scrapers": { "main": [[{ "node": "Wait 5min", "type": "main", "index": 0 }]] },
     "Wait 5min": { "main": [[{ "node": "Get Last Run", "type": "main", "index": 0 }]] },
-    "Get Last Run": { "main": [[{ "node": "IF Success", "type": "main", "index": 0 }]] },
+    "Get Last Run": { "main": [[{ "node": "Purge Old Events", "type": "main", "index": 0 }]] },
+    "Purge Old Events": { "main": [[{ "node": "IF Success", "type": "main", "index": 0 }]] },
     "IF Success": {
       "main": [
         [{ "node": "Slack OK", "type": "main", "index": 0 }],
