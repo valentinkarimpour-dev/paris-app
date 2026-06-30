@@ -610,6 +610,26 @@
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='44' viewBox='0 0 32 44'%3E%3Ctext x='4' y='38' font-size='28' transform='rotate(-12 16 20)'%3E%F0%9F%9A%B6%3C/text%3E%3C/svg%3E") 16 0, auto;
   }
 
+  #hors-paris-warning {
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 80, 60, 0.92);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 20px;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  #hors-paris-warning.visible { opacity: 1; }
+
   @keyframes pegmanFall {
     0%   { transform: translateY(-50px) rotate(-15deg); opacity: 0.9; }
     55%  { transform: translateY(4px)   rotate(6deg);  opacity: 1;   }
@@ -976,6 +996,7 @@
 <!-- MAP -->
 <div id="map-container">
   <div id="map"></div>
+  <div id="hors-paris-warning">📍 Hors de Paris</div>
   <div id="map-cats">
     <button class="cat-btn active" data-cat="all" data-label="Tout">Tout</button>
     <button class="cat-btn" data-cat="musique" data-label="🎵 Musique">🎵 Musique</button>
@@ -1380,12 +1401,39 @@ function updateCatCounts(allEvents) {
   });
 }
 
+const _PARIS_POLY = [
+  [48.9022, 2.3084],[48.8985, 2.3650],[48.8855, 2.4050],
+  [48.8650, 2.4175],[48.8450, 2.4175],[48.8300, 2.3780],
+  [48.8195, 2.3311],[48.8242, 2.2857],[48.8395, 2.2535],
+  [48.8572, 2.2350],[48.8789, 2.2600],[48.9022, 2.3084],
+];
+
+function isInsideParis(lat, lng) {
+  let inside = false;
+  for (let i = 0, j = _PARIS_POLY.length - 1; i < _PARIS_POLY.length; j = i++) {
+    const [yi, xi] = _PARIS_POLY[i];
+    const [yj, xj] = _PARIS_POLY[j];
+    if (((yi > lat) !== (yj > lat)) &&
+        (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
 // ══════════════════════════════════════════
 // PLACE PIN & SEARCH
 // ══════════════════════════════════════════
 function placePin(lat, lng) {
   document.getElementById('eiffel-btn').classList.remove('active');
   document.getElementById('pegman-btn').classList.add('pinned');
+  const _warning = document.getElementById('hors-paris-warning');
+  if (!isInsideParis(lat, lng)) {
+    _warning.classList.add('visible');
+    setTimeout(() => _warning.classList.remove('visible'), 3000);
+  } else {
+    _warning.classList.remove('visible');
+  }
   currentLat = lat;
   currentLng = lng;
 
