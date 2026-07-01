@@ -111,6 +111,9 @@
       padding-bottom: 2px;
     }
     #map-cats::-webkit-scrollbar { display: none; }
+    #map-cats { display: none; }
+    #mobile-cats { display: block !important; }
+    #apply-filters-wrap { display: block !important; }
     #pegman-btn, #eiffel-btn, #geolocate-btn {
       width: 44px;
       height: 44px;
@@ -121,7 +124,7 @@
     #geolocate-btn { top: 68px; right: 16px; }
     #map-radius-control {
       position: absolute;
-      bottom: 48px;
+      bottom: calc(env(safe-area-inset-bottom, 20px) + 90px);
       left: 50%;
       transform: translateX(-50%);
       z-index: 998;
@@ -381,6 +384,26 @@
   }
 
   .cat-btn.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: #0F1117;
+    font-weight: 600;
+  }
+
+  .mob-cat-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--stone);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .mob-cat-btn.active {
     background: var(--green);
     border-color: var(--green);
     color: #0F1117;
@@ -1083,6 +1106,27 @@
 
   </div>
 
+  <div id="mobile-cats" style="display:none; padding: 0 20px 16px;">
+    <div class="control-label">Catégories</div>
+    <div id="mobile-cat-grid" style="display:flex; flex-wrap:wrap; gap:8px;">
+      <button class="mob-cat-btn active" data-cat="all">Tout</button>
+      <button class="mob-cat-btn" data-cat="musique">🎵 Musique</button>
+      <button class="mob-cat-btn" data-cat="exposition">🖼 Expo</button>
+      <button class="mob-cat-btn" data-cat="vide-grenier">🪑 Vide-grenier</button>
+      <button class="mob-cat-btn" data-cat="spectacle">🎭 Spectacle</button>
+      <button class="mob-cat-btn" data-cat="atelier">🎨 Atelier</button>
+      <button class="mob-cat-btn" data-cat="restaurant">🍽 Restaurant</button>
+      <button class="mob-cat-btn" data-cat="brocante">🪑 Brocante</button>
+      <button class="mob-cat-btn" data-cat="sport">🏃 Sport</button>
+      <button class="mob-cat-btn" data-cat="cafe">☕ Café</button>
+      <button class="mob-cat-btn" data-cat="bar">🍺 Bar</button>
+      <button class="mob-cat-btn" data-cat="cinema">🎬 Cinéma</button>
+      <button class="mob-cat-btn" data-cat="musee">🏛 Musée</button>
+      <button class="mob-cat-btn" data-cat="popup">🛍 Popup</button>
+      <button class="mob-cat-btn" data-cat="autre">📌 Autre</button>
+    </div>
+  </div>
+
   <div class="sidebar-divider"></div>
 
   <!-- PERIOD FILTER -->
@@ -1091,6 +1135,22 @@
       <span id="period-label">Ouverts aujourd'hui</span>
       <span class="period-chevron">▾</span>
     </button>
+  </div>
+
+  <div id="apply-filters-wrap" style="display:none; padding: 0 20px 16px;">
+    <button id="apply-filters-btn" style="
+      width: 100%;
+      background: var(--green);
+      border: none;
+      color: #0F1117;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+    ">Appliquer les filtres</button>
   </div>
 
   <div class="sidebar-divider"></div>
@@ -2058,8 +2118,10 @@ document.getElementById('radius-slider').addEventListener('input', e => {
   mapLabel.textContent = currentRadius + 'm';
   if (currentLat) {
     updateCircle(currentLat, currentLng);
-    clearTimeout(sliderDebounce);
-    sliderDebounce = setTimeout(() => searchEvents(), 400);
+    if (window.innerWidth > 768) {
+      clearTimeout(sliderDebounce);
+      sliderDebounce = setTimeout(() => searchEvents(), 400);
+    }
   }
 });
 
@@ -2071,8 +2133,10 @@ mapSlider.addEventListener('input', e => {
   document.getElementById('radius-val').textContent = currentRadius;
   if (currentLat) {
     updateCircle(currentLat, currentLng);
-    clearTimeout(sliderDebounce);
-    sliderDebounce = setTimeout(() => searchEvents(), 400);
+    if (window.innerWidth > 768) {
+      clearTimeout(sliderDebounce);
+      sliderDebounce = setTimeout(() => searchEvents(), 400);
+    }
   }
 });
 
@@ -2086,11 +2150,26 @@ document.querySelectorAll('.cat-btn').forEach(btn => {
     document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     activeCategory = btn.dataset.cat;
-    if (currentLat !== null) {
-      searchEvents();
-    } else {
-      searchEventsBrowse();
+    if (window.innerWidth > 768) {
+      if (currentLat !== null) searchEvents();
+      else searchEventsBrowse();
     }
+    document.querySelectorAll('.mob-cat-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === activeCategory);
+    });
+  });
+});
+
+// ── CATEGORY FILTERS MOBILE ──
+document.querySelectorAll('.mob-cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mob-cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCategory = btn.dataset.cat;
+    document.querySelectorAll('.cat-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.cat === activeCategory);
+    });
+    // Pas de recherche immédiate sur mobile
   });
 });
 
@@ -2132,22 +2211,28 @@ document.querySelectorAll('.period-option').forEach(opt => {
     if (e.target.closest('.period-inline')) return;
 
     periodPopover.classList.add('hidden');
-    if (currentLat !== null) searchEvents();
-    else searchEventsBrowse();
+    if (window.innerWidth > 768) {
+      if (currentLat !== null) searchEvents();
+      else searchEventsBrowse();
+    }
   });
 });
 
 document.getElementById('period-days-val').addEventListener('change', () => {
   periodMode = 'recent';
   periodPopover.classList.add('hidden');
-  if (currentLat) searchEvents();
-  else searchEventsBrowse();
+  if (window.innerWidth > 768) {
+    if (currentLat) searchEvents();
+    else searchEventsBrowse();
+  }
 });
 document.getElementById('period-days-unit').addEventListener('change', () => {
   periodMode = 'recent';
   periodPopover.classList.add('hidden');
-  if (currentLat) searchEvents();
-  else searchEventsBrowse();
+  if (window.innerWidth > 768) {
+    if (currentLat) searchEvents();
+    else searchEventsBrowse();
+  }
 });
 
 // ══════════════════════════════════════════
@@ -2158,6 +2243,15 @@ document.getElementById('show-all-btn').addEventListener('click', () => {
   document.getElementById('show-all-btn').classList.toggle('active', showPermanents);
   if (currentLat !== null) searchEvents();
   else searchEventsBrowse();
+});
+
+document.getElementById('apply-filters-btn').addEventListener('click', () => {
+  if (currentLat !== null) searchEvents();
+  else searchEventsBrowse();
+  if (window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('visible');
+  }
 });
 
 document.getElementById('eiffel-btn').addEventListener('click', () => {
