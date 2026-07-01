@@ -2133,22 +2133,21 @@ document.querySelectorAll('.period-option').forEach(opt => {
 
     periodPopover.classList.add('hidden');
     if (currentLat !== null) searchEvents();
+    else searchEventsBrowse();
   });
 });
 
 document.getElementById('period-days-val').addEventListener('change', () => {
   periodMode = 'recent';
-  if (currentLat) {
-    periodPopover.classList.add('hidden');
-    searchEvents();
-  }
+  periodPopover.classList.add('hidden');
+  if (currentLat) searchEvents();
+  else searchEventsBrowse();
 });
 document.getElementById('period-days-unit').addEventListener('change', () => {
   periodMode = 'recent';
-  if (currentLat) {
-    periodPopover.classList.add('hidden');
-    searchEvents();
-  }
+  periodPopover.classList.add('hidden');
+  if (currentLat) searchEvents();
+  else searchEventsBrowse();
 });
 
 // ══════════════════════════════════════════
