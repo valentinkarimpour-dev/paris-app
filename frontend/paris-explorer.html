@@ -119,6 +119,45 @@
     #pegman-btn { top: 16px; right: 16px; }
     #eiffel-btn { top: 16px; right: 68px; }
     #geolocate-btn { top: 68px; right: 16px; }
+    #map-radius-control {
+      position: absolute;
+      bottom: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 998;
+      background: rgba(15,17,23,0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 28px;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      white-space: nowrap;
+    }
+    #map-radius-control.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+    #map-radius-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--cream);
+      min-width: 52px;
+      text-align: center;
+    }
+    #map-radius-slider {
+      width: 130px;
+      margin-bottom: 0;
+    }
+  }
+  @media (min-width: 769px) {
+    #map-radius-control { display: none; }
   }
 
   #sidebar-header {
@@ -1095,6 +1134,11 @@
   <div id="backend-warning" style="display:none; position:absolute; bottom:40px; left:50%; transform:translateX(-50%); z-index:999; font-size:11px; color:var(--gold); background:rgba(15,17,23,0.8); padding:6px 14px; border-radius:20px; white-space:nowrap;">
     ⚠️ Événements dynamiques indisponibles
   </div>
+  <div id="map-radius-control">
+    <span id="map-radius-label">500m</span>
+    <input type="range" id="map-radius-slider"
+           min="200" max="2000" step="100" value="500">
+  </div>
   <div id="loading"><span class="loader-text dot-anim">Chargement</span></div>
   <div id="map-hint">Glisse le 🚶 sur la carte · Ajuste le rayon avec le slider</div>
   <div id="drop-target-hint">Lâche ici pour explorer ce quartier</div>
@@ -1536,6 +1580,11 @@ function placePin(lat, lng) {
 
   document.getElementById('map-hint').classList.add('hidden');
   if (typeof openSidebarIfMobile === 'function') openSidebarIfMobile();
+  if (window.innerWidth <= 768) {
+    mapRadiusControl.classList.add('visible');
+    mapSlider.value = currentRadius;
+    mapLabel.textContent = currentRadius + 'm';
+  }
 }
 
 function resetToBrowse() {
@@ -1545,6 +1594,7 @@ function resetToBrowse() {
   currentLng = null;
   document.getElementById('eiffel-btn').classList.add('active');
   document.getElementById('pegman-btn').classList.remove('pinned');
+  mapRadiusControl.classList.remove('visible');
   document.getElementById('map-hint').classList.remove('hidden');
   searchEventsBrowse();
 }
@@ -1996,9 +2046,28 @@ function highlightCard(id) {
 // ══════════════════════════════════════════
 // SLIDER
 // ══════════════════════════════════════════
+const mapSlider = document.getElementById('map-radius-slider');
+const mapLabel  = document.getElementById('map-radius-label');
+const mapRadiusControl = document.getElementById('map-radius-control');
+
 let sliderDebounce = null;
 document.getElementById('radius-slider').addEventListener('input', e => {
   currentRadius = parseInt(e.target.value);
+  document.getElementById('radius-val').textContent = currentRadius;
+  mapSlider.value = currentRadius;
+  mapLabel.textContent = currentRadius + 'm';
+  if (currentLat) {
+    updateCircle(currentLat, currentLng);
+    clearTimeout(sliderDebounce);
+    sliderDebounce = setTimeout(() => searchEvents(), 400);
+  }
+});
+
+// ── SLIDER CARTE (mobile) ──
+mapSlider.addEventListener('input', e => {
+  currentRadius = parseInt(e.target.value);
+  mapLabel.textContent = currentRadius + 'm';
+  document.getElementById('radius-slider').value = currentRadius;
   document.getElementById('radius-val').textContent = currentRadius;
   if (currentLat) {
     updateCircle(currentLat, currentLng);
