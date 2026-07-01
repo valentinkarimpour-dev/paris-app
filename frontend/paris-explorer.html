@@ -46,6 +46,79 @@
     position: relative;
     z-index: 1000;
     box-shadow: 4px 0 32px rgba(0,0,0,0.4);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  #sidebar.collapsed {
+    transform: translateX(calc(-1 * var(--sidebar-w)));
+  }
+  #sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #sidebar-overlay.visible { opacity: 1; }
+  #sidebar-toggle {
+    position: absolute;
+    top: 20px;
+    right: -52px;
+    width: 44px;
+    height: 44px;
+    background: var(--ink);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    transition: border-color 0.2s;
+    flex-shrink: 0;
+  }
+  #sidebar-toggle:hover { border-color: var(--green); }
+  #sidebar-toggle svg {
+    width: 18px;
+    height: 18px;
+    stroke: var(--cream);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+  @media (max-width: 768px) {
+    body { position: relative; }
+    #sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 1000;
+      transform: translateX(calc(-1 * var(--sidebar-w)));
+      --sidebar-w: min(85vw, 360px);
+    }
+    #sidebar.open { transform: translateX(0); }
+    #sidebar-overlay { display: block; }
+    #sidebar-toggle { right: -52px; }
+    #map-container { width: 100vw; }
+    #map-cats {
+      right: 16px;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    #map-cats::-webkit-scrollbar { display: none; }
+    #pegman-btn, #eiffel-btn, #geolocate-btn {
+      width: 44px;
+      height: 44px;
+      font-size: 20px;
+    }
+    #pegman-btn { top: 16px; right: 16px; }
+    #eiffel-btn { top: 16px; right: 68px; }
+    #geolocate-btn { top: 68px; right: 16px; }
   }
 
   #sidebar-header {
@@ -935,8 +1008,13 @@
 
 <body>
 
+<div id="sidebar-overlay"></div>
+
 <!-- SIDEBAR -->
 <div id="sidebar">
+  <button id="sidebar-toggle" aria-label="Masquer le menu">
+    <svg viewBox="0 0 18 18"><line x1="3" y1="9" x2="15" y2="9"/><line x1="3" y1="4" x2="15" y2="4"/><line x1="3" y1="14" x2="15" y2="14"/></svg>
+  </button>
   <div id="sidebar-header">
     <div class="logo">Flân<em>eur</em></div>
     <div class="tagline">Paris · Ce qui s'ouvre, ce qui se passe</div>
@@ -1457,6 +1535,7 @@ function placePin(lat, lng) {
   setTimeout(() => refreshColors(), 10000);
 
   document.getElementById('map-hint').classList.add('hidden');
+  if (typeof openSidebarIfMobile === 'function') openSidebarIfMobile();
 }
 
 function resetToBrowse() {
@@ -2094,6 +2173,35 @@ document.getElementById('geolocate-btn').addEventListener('click', () => {
     { timeout: 8000, maximumAge: 60000 }
   );
 });
+// SIDEBAR TOGGLE (mobile)
+(function() {
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('sidebar-overlay');
+  const toggleBtn = document.getElementById('sidebar-toggle');
+
+  function isMobile() { return window.innerWidth <= 768; }
+
+  function openSidebar() {
+    sidebar.classList.add('open');
+    overlay.style.display = 'block';
+    requestAnimationFrame(() => overlay.classList.add('visible'));
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('visible');
+    overlay.addEventListener('transitionend', () => { overlay.style.display = 'none'; }, { once: true });
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    if (isMobile()) {
+      sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+    }
+  });
+  overlay.addEventListener('click', closeSidebar);
+
+  window.openSidebarIfMobile = function() { if (isMobile()) openSidebar(); };
+})();
+
 // Chargement initial — tous les événements Nouveaux sur Paris
 searchEventsBrowse();
 </script>
