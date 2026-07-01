@@ -4,7 +4,7 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }]
+          "interval": [{ "field": "cronExpression", "expression": "0 6 * * *" }]
         }
       },
       "name": "Schedule",
@@ -27,10 +27,10 @@
     },
     {
       "parameters": {
-        "amount": 5,
+        "amount": 6,
         "unit": "minutes"
       },
-      "name": "Wait 5min",
+      "name": "Wait 6min",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [680, 300],
@@ -78,7 +78,7 @@
     {
       "parameters": {
         "select": "channel",
-        "channelId": { "value": "paris-app-sorties", "__rl": true, "mode": "name" },
+        "channelId": { "value": "n8n-workflow-execution", "__rl": true, "mode": "name" },
         "text": "=:white_check_mark: [DAILY] — run terminé\n\n• Events insérés : {{ $('Get Last Run').item.json.total_inserted }}\n• Scrapers OK : {{ $('Get Last Run').item.json.completed }}/{{ $('Get Last Run').item.json.total_scrapers }}\n• Déclenché à : {{ $('Get Last Run').item.json.triggered_at }}\n\nInsérés par source :\n{{ Object.entries($('Get Last Run').item.json.scrapers).filter(([k,v]) => v.inserted > 0).map(([k,v]) => `• ${k}: +${v.inserted}`).join('\\n') || '_aucun_' }}\n\nSupprimés (expirés) :\n{{ Object.entries($('Purge Old Events').item.json.deleted_by_source).map(([k,v]) => `• ${k}: -${v}`).join('\\n') || '_aucun_' }}\n_Automated with this n8n workflow_",
         "otherOptions": {}
       },
@@ -91,7 +91,7 @@
     {
       "parameters": {
         "select": "channel",
-        "channelId": { "value": "paris-app-sorties", "__rl": true, "mode": "name" },
+        "channelId": { "value": "n8n-workflow-execution", "__rl": true, "mode": "name" },
         "text": "=:x: [DAILY] — erreur détectée\n\n• Scrapers en échec : {{ $('Get Last Run').item.json.errors }}/{{ $('Get Last Run').item.json.total_scrapers }}\n• Status : {{ $('Get Last Run').item.json.status }}\n• Déclenché à : {{ $('Get Last Run').item.json.triggered_at }}\n\nDétail des échecs :\n{{ Object.entries($('Get Last Run').item.json.scrapers).filter(([k,v]) => v.status !== 'done').map(([k,v]) => `• ${k}: ${v.error_msg}`).join('\\n') || '_aucun détail_' }}\n_Automated with this n8n workflow_",
         "otherOptions": {}
       },
@@ -100,18 +100,127 @@
       "typeVersion": 2.2,
       "position": [1560, 420],
       "id": "node7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [{
+            "value1": "={{ $now.day }}",
+            "operation": "equal",
+            "value2": 1
+          }]
+        }
+      },
+      "name": "IF Is First Of Month",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1780, 300],
+      "id": "node9"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8000/scrapers/run-monthly",
+        "options": {}
+      },
+      "name": "Run Monthly Scrapers",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 220],
+      "id": "node10"
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "minutes"
+      },
+      "name": "Wait Monthly",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2220, 220],
+      "id": "node11"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8000/scrapers/last-run",
+        "options": {}
+      },
+      "name": "Get Last Run Monthly",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2440, 220],
+      "id": "node12"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [{
+            "value1": "={{ $('Get Last Run Monthly').item.json.status }}",
+            "operation": "equal",
+            "value2": "done"
+          }]
+        }
+      },
+      "name": "IF Success Monthly",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [2660, 220],
+      "id": "node13"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "value": "n8n-workflow-execution", "__rl": true, "mode": "name" },
+        "text": "=:white_check_mark: [MENSUEL] — scrapers mensuels terminés\n\n• Events insérés : {{ $('Get Last Run Monthly').item.json.total_inserted }}\n• Scrapers OK : {{ $('Get Last Run Monthly').item.json.completed }}/{{ $('Get Last Run Monthly').item.json.total_scrapers }}\n• Déclenché à : {{ $('Get Last Run Monthly').item.json.triggered_at }}\n_Automated with this n8n workflow_",
+        "otherOptions": {}
+      },
+      "name": "Slack OK Monthly",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [2880, 120],
+      "id": "node14"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": { "value": "n8n-workflow-execution", "__rl": true, "mode": "name" },
+        "text": "=:x: [MENSUEL] — erreur scrapers mensuels\n\n• Scrapers en échec : {{ $('Get Last Run Monthly').item.json.errors }}/{{ $('Get Last Run Monthly').item.json.total_scrapers }}\n• Status : {{ $('Get Last Run Monthly').item.json.status }}\n• Déclenché à : {{ $('Get Last Run Monthly').item.json.triggered_at }}\n\nDétail des échecs :\n{{ Object.entries($('Get Last Run Monthly').item.json.scrapers).filter(([k,v]) => v.status !== 'done').map(([k,v]) => `• ${k}: ${v.error_msg}`).join('\\n') || '_aucun détail_' }}\n_Automated with this n8n workflow_",
+        "otherOptions": {}
+      },
+      "name": "Slack Error Monthly",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [2880, 320],
+      "id": "node15"
     }
   ],
   "connections": {
     "Schedule": { "main": [[{ "node": "Run All Scrapers", "type": "main", "index": 0 }]] },
-    "Run All Scrapers": { "main": [[{ "node": "Wait 5min", "type": "main", "index": 0 }]] },
-    "Wait 5min": { "main": [[{ "node": "Get Last Run", "type": "main", "index": 0 }]] },
+    "Run All Scrapers": { "main": [[{ "node": "Wait 6min", "type": "main", "index": 0 }]] },
+    "Wait 6min": { "main": [[{ "node": "Get Last Run", "type": "main", "index": 0 }]] },
     "Get Last Run": { "main": [[{ "node": "Purge Old Events", "type": "main", "index": 0 }]] },
     "Purge Old Events": { "main": [[{ "node": "IF Success", "type": "main", "index": 0 }]] },
     "IF Success": {
       "main": [
         [{ "node": "Slack OK", "type": "main", "index": 0 }],
         [{ "node": "Slack Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Slack OK": { "main": [[{ "node": "IF Is First Of Month", "type": "main", "index": 0 }]] },
+    "Slack Error": { "main": [[{ "node": "IF Is First Of Month", "type": "main", "index": 0 }]] },
+    "IF Is First Of Month": {
+      "main": [
+        [{ "node": "Run Monthly Scrapers", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Run Monthly Scrapers": { "main": [[{ "node": "Wait Monthly", "type": "main", "index": 0 }]] },
+    "Wait Monthly": { "main": [[{ "node": "Get Last Run Monthly", "type": "main", "index": 0 }]] },
+    "Get Last Run Monthly": { "main": [[{ "node": "IF Success Monthly", "type": "main", "index": 0 }]] },
+    "IF Success Monthly": {
+      "main": [
+        [{ "node": "Slack OK Monthly", "type": "main", "index": 0 }],
+        [{ "node": "Slack Error Monthly", "type": "main", "index": 0 }]
       ]
     }
   }
