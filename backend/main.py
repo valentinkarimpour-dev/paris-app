@@ -106,10 +106,11 @@ def last_run_summary():
 
 @app.post("/scrapers/run/{name}")
 def trigger_scraper(name: str, background_tasks: BackgroundTasks):
-    from scrapers import ALL_SCRAPERS
-    scraper_cls = next((s for s in ALL_SCRAPERS if s.name == name), None)
+    from scrapers import ALL_SCRAPERS, MONTHLY_SCRAPERS
+    all_known = ALL_SCRAPERS + MONTHLY_SCRAPERS
+    scraper_cls = next((s for s in all_known if s.name == name), None)
     if not scraper_cls:
-        return {"error": f"scraper '{name}' inconnu", "available": [s.name for s in ALL_SCRAPERS]}
+        return {"error": f"scraper '{name}' inconnu", "available": [s.name for s in all_known]}
     background_tasks.add_task(scraper_cls().run)
     logger.info("[n8n] scraper '%s' déclenché", name)
     return {"status": "started", "scraper": name}
