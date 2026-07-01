@@ -172,7 +172,7 @@
         "select": "channel",
         "channelId": { "value": "n8n-workflow-execution", "__rl": true, "mode": "name" },
         "text": "=:white_check_mark: [MENSUEL] — scrapers mensuels terminés\n\n• Events insérés : {{ $('Get Last Run Monthly').item.json.total_inserted }}\n• Scrapers OK : {{ $('Get Last Run Monthly').item.json.completed }}/{{ $('Get Last Run Monthly').item.json.total_scrapers }}\n• Déclenché à : {{ $('Get Last Run Monthly').item.json.triggered_at }}\n_Automated with this n8n workflow_",
-        "otherOptions": {}
+        "otherOptions": { "includeLinkToWorkflow": false }
       },
       "name": "Slack OK Monthly",
       "type": "n8n-nodes-base.slack",
@@ -185,7 +185,7 @@
         "select": "channel",
         "channelId": { "value": "n8n-workflow-execution", "__rl": true, "mode": "name" },
         "text": "=:x: [MENSUEL] — erreur scrapers mensuels\n\n• Scrapers en échec : {{ $('Get Last Run Monthly').item.json.errors }}/{{ $('Get Last Run Monthly').item.json.total_scrapers }}\n• Status : {{ $('Get Last Run Monthly').item.json.status }}\n• Déclenché à : {{ $('Get Last Run Monthly').item.json.triggered_at }}\n\nDétail des échecs :\n{{ Object.entries($('Get Last Run Monthly').item.json.scrapers).filter(([k,v]) => v.status !== 'done').map(([k,v]) => `• ${k}: ${v.error_msg}`).join('\\n') || '_aucun détail_' }}\n_Automated with this n8n workflow_",
-        "otherOptions": {}
+        "otherOptions": { "includeLinkToWorkflow": false }
       },
       "name": "Slack Error Monthly",
       "type": "n8n-nodes-base.slack",

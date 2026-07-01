@@ -90,15 +90,19 @@ Contenu :
         return []
 
 
-def _current_month_url() -> str:
+def _get_urls_to_scrape() -> list[str]:
     now = datetime.now()
-    month = MONTHS_EN[now.month - 1]
-    return f"{BASE}/paris-events-calendar/whats-on-{month}-{now.year}/"
+    urls = []
+    urls.append(f"{BASE}/paris-events-calendar/whats-on-{MONTHS_EN[now.month - 1]}-{now.year}/")
+    if now.day <= 3:
+        prev = now.replace(day=1) - timedelta(days=1)
+        urls.append(f"{BASE}/paris-events-calendar/whats-on-{MONTHS_EN[prev.month - 1]}-{prev.year}/")
+    return urls
 
 
 async def _scrape_async() -> list[dict]:
-    url = _current_month_url()
-    logger.info("[secrets_of_paris] URL du mois : %s", url)
+    urls = _get_urls_to_scrape()
+    logger.info("[secrets_of_paris] URLs à scraper : %s", urls)
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
@@ -112,41 +116,51 @@ async def _scrape_async() -> list[dict]:
         await ctx.route("**/*.{png,jpg,jpeg,gif,webp,woff2,woff,ttf}", lambda r: r.abort())
         page = await ctx.new_page()
 
-        try:
-            resp = await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-            if not resp or resp.status >= 400:
-                logger.error("[secrets_of_paris] Page inaccessible : HTTP %s", resp.status if resp else "?")
-                await browser.close()
-                return []
-            await page.wait_for_timeout(2000)
+        all_extracted: list[dict] = []
+        for url in urls:
+            try:
+                resp = await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                if not resp or resp.status >= 400:
+                    logger.error("[secrets_of_paris] Page inaccessible : HTTP %s", resp.status if resp else "?")
+                    continue
+                await page.wait_for_timeout(2000)
 
-            # Scroll pour charger le contenu lazy-loaded
-            for _ in range(5):
-                await page.evaluate("window.scrollBy(0, 1500)")
-                await page.wait_for_timeout(500)
+                # Scroll pour charger le contenu lazy-loaded
+                for _ in range(5):
+                    await page.evaluate("window.scrollBy(0, 1500)")
+                    await page.wait_for_timeout(500)
 
-            page_text = await page.evaluate("""() => {
-                const el = document.querySelector('article, .entry-content, main, body');
-                return el ? el.innerText : document.body.innerText;
-            }""")
+                page_text = await page.evaluate("""() => {
+                    const el = document.querySelector('article, .entry-content, main, body');
+                    return el ? el.innerText : document.body.innerText;
+                }""")
+            except Exception:
+                logger.exception("[secrets_of_paris] Erreur chargement page %s", url)
+                continue
 
-        except Exception:
-            logger.exception("[secrets_of_paris] Erreur chargement page")
-            await browser.close()
-            return []
+            if not page_text or len(page_text) < 300:
+                logger.warning("[secrets_of_paris] Contenu trop court (%d chars) : %s", len(page_text) if page_text else 0, url)
+                continue
+
+            extracted = _extract_events(page_text)
+            logger.info("[secrets_of_paris] %d événements extraits depuis %s", len(extracted), url)
+            for item in extracted:
+                item["_source_url"] = url
+            all_extracted.extend(extracted)
 
         await browser.close()
 
-    if not page_text or len(page_text) < 300:
-        logger.warning("[secrets_of_paris] Contenu trop court (%d chars)", len(page_text))
-        return []
-
-    extracted_list = _extract_events(page_text)
-
+    # Déduplique par slug (priorité au mois courant, en premier dans la liste)
+    seen_slugs: set[str] = set()
     events = []
-    for extracted in extracted_list:
+    for extracted in all_extracted:
         if not extracted.get("titre"):
             continue
+        slug = _slugify(extracted["titre"])
+        if slug in seen_slugs:
+            continue
+        seen_slugs.add(slug)
+        source_url = extracted.pop("_source_url")
         date_fin = None
         if extracted.get("date_debut") and extracted.get("duree_jours"):
             try:
@@ -163,10 +177,10 @@ async def _scrape_async() -> list[dict]:
             "duree_jours": extracted.get("duree_jours"),
             "categorie":   extracted.get("categorie", "autre"),
             "source":      "secrets_of_paris",
-            "url":         url + "#" + _slugify(extracted.get("titre", "")),
+            "url":         source_url + "#" + slug,
         })
 
-    logger.info("[secrets_of_paris] %d événements extraits", len(events))
+    logger.info("[secrets_of_paris] %d événements après déduplication", len(events))
     return events
 
 
