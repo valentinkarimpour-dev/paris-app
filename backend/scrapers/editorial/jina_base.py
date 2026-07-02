@@ -131,6 +131,21 @@ class JinaBaseScraper(BaseScraper):
                             ).strftime("%Y-%m-%d")
                         except Exception:
                             pass
+                    # Géocodage freetext via titre si adresse absente
+                    if not item.get("adresse") and item.get("titre"):
+                        from geocoder import geocode_freetext
+                        lat, lng = geocode_freetext(item["titre"])
+                        if lat:
+                            item["lat"] = lat
+                            item["lng"] = lng
+                    # Filtre localisation pour les scrapers qui l'exigent
+                    if getattr(self, 'require_location', False):
+                        if not item.get("adresse") and not item.get("lat"):
+                            logger.debug(
+                                "[%s] item liste ignoré (aucune localisation) : %s",
+                                self.name, item.get("titre", "?")
+                            )
+                            continue
                     results.append({
                         "titre":       item.get("titre", ""),
                         "description": item.get("description", ""),

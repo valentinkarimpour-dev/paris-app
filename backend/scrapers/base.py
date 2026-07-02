@@ -128,7 +128,14 @@ Extrait TOUS les lieux/événements mentionnés et retourne UNIQUEMENT un tablea
 Chaque élément du tableau doit avoir :
 - titre        : nom propre du lieu ou événement
 - description  : résumé en 2 phrases max
-- adresse      : adresse complète avec numéro + rue + code postal (null si absente)
+- adresse      : adresse complète avec numéro + rue + code postal
+                     si disponible. Si pas d'adresse de rue mais un lieu
+                     nommé est mentionné (musée, salle, parc, palais,
+                     hippodrome, stade, jardin, galerie), retourner le
+                     nom du lieu seul (ex: "Hippodrome de Vincennes",
+                     "Palais de Tokyo", "Grande Halle de la Villette").
+                     null uniquement si aucune localisation n'est
+                     mentionnée.
 - date_debut   : date au format YYYY-MM-DD (null si inconnue)
 - duree_jours  : durée en nombre entier de jours. Convertis : "pendant 7 jours" → 7,
     "1 semaine" → 7, "2 semaines" → 14, "1 mois" → 30, "2 mois" → 60, etc.
