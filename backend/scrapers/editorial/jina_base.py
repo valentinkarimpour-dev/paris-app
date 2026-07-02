@@ -2,15 +2,22 @@ import asyncio
 import logging
 import re
 import time
+import unicodedata as _uc
 
 import httpx
 from playwright.async_api import async_playwright
 
-from ..base import BaseScraper, extract_with_llm
+from ..base import BaseScraper, extract_with_llm, extract_list_with_llm
 
 logger = logging.getLogger(__name__)
 
 _UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+
+def _slugify(s: str) -> str:
+    nfkd = _uc.normalize("NFKD", s)
+    s = nfkd.encode("ascii", "ignore").decode("ascii").lower()
+    return re.sub(r"[^a-z0-9]+", "-", s).strip("-")
 
 
 class JinaBaseScraper(BaseScraper):
@@ -100,28 +107,65 @@ class JinaBaseScraper(BaseScraper):
             if not article_content:
                 logger.warning("[%s] article vide : %s", self.name, url)
                 continue
-            data = extract_with_llm(self._prepare_text(article_content))
-            if not data:
-                continue
-            if self.require_dates:
-                CATEGORIES_EPHEMERES = {
-                    "exposition", "popup", "galerie", "musique",
-                    "spectacle", "cinema", "atelier", "marche",
-                }
-                categorie = data.get("categorie", "")
-                est_ephemere = (
-                    categorie in CATEGORIES_EPHEMERES
-                    or categorie.startswith("autre:")
+            if self._is_list_article(url, article_content):
+                items = extract_list_with_llm(
+                    self._prepare_text_list(article_content)
                 )
-                if est_ephemere and not (data.get("date_debut") and data.get("date_fin")):
-                    logger.debug(
-                        "[%s] skipped — événement éphémère sans dates : %s",
-                        self.name, url
-                    )
+                for item in items:
+                    if not item.get("titre"):
+                        continue
+                    if self.require_dates and not item.get("date_debut"):
+                        logger.debug(
+                            "[%s] item liste ignoré (pas de date_debut) : %s",
+                            self.name, item.get("titre", "?")
+                        )
+                        continue
+                    date_fin = item.get("date_fin")
+                    if not date_fin and item.get("date_debut") \
+                            and item.get("duree_jours"):
+                        try:
+                            from datetime import datetime, timedelta
+                            d = datetime.strptime(item["date_debut"], "%Y-%m-%d")
+                            date_fin = (
+                                d + timedelta(days=int(item["duree_jours"]))
+                            ).strftime("%Y-%m-%d")
+                        except Exception:
+                            pass
+                    results.append({
+                        "titre":       item.get("titre", ""),
+                        "description": item.get("description", ""),
+                        "adresse":     item.get("adresse") or "",
+                        "date_debut":  item.get("date_debut"),
+                        "date_fin":    date_fin,
+                        "duree_jours": item.get("duree_jours"),
+                        "categorie":   item.get("categorie", "autre"),
+                        "source":      self.name,
+                        "url":         url + "#" + _slugify(item.get("titre", "")),
+                        "image_url":   None,
+                    })
+            else:
+                data = extract_with_llm(self._prepare_text(article_content))
+                if not data:
                     continue
-            data["url"] = url
-            data["source"] = self.name
-            results.append(data)
+                if self.require_dates:
+                    CATEGORIES_EPHEMERES = {
+                        "exposition", "popup", "galerie", "musique",
+                        "spectacle", "cinema", "atelier", "marche",
+                    }
+                    categorie = data.get("categorie", "")
+                    est_ephemere = (
+                        categorie in CATEGORIES_EPHEMERES
+                        or categorie.startswith("autre:")
+                    )
+                    if est_ephemere and not (data.get("date_debut") and data.get("date_fin")):
+                        logger.debug(
+                            "[%s] skipped — événement éphémère sans dates : %s",
+                            self.name, url
+                        )
+                        continue
+                data["url"] = url
+                data["source"] = self.name
+                results.append(data)
             time.sleep(1)
 
         seen_titres = set()
@@ -139,3 +183,28 @@ class JinaBaseScraper(BaseScraper):
         Par défaut : texte brut complet (la troncature est dans extract_with_llm).
         """
         return page_text
+
+    def _is_list_article(self, article_url: str, page_text: str) -> bool:
+        slug = article_url.rstrip('/').split('/')[-1]
+        number_words = (
+            r'deux|trois|quatre|cinq|six|sept|huit|neuf|dix|'
+            r'onze|douze|quinze|vingt'
+        )
+        if re.search(rf'(^|\-)(les\-)?(\d+|{number_words})[\-_]', slug, re.I):
+            return True
+        numbered_h2 = re.findall(
+            r'^##\s+[\*_]{0,2}\d+[\.\)]\s',
+            page_text, re.MULTILINE
+        )
+        return len(numbered_h2) >= 3
+
+    def _prepare_text_list(self, page_text: str) -> str:
+        instruction = (
+            "[INSTRUCTION : ceci est un article listant plusieurs lieux ou "
+            "événements. N'extrait QUE les entrées qui ont une date de début "
+            "ET un lieu explicites. Ignore les entrées dont la date dépend "
+            "d'un calendrier externe ('selon les matchs', 'dates variables', "
+            "etc.) ou dont l'adresse est absente.]\n\n"
+        )
+        content = page_text[4000:][:10000]
+        return instruction + content
