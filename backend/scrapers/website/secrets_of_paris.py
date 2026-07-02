@@ -2,7 +2,7 @@
 Secrets of Paris — calendrier mensuel des événements
 URL : https://secretsofparis.com/paris-events-calendar/whats-on-{month}-{year}/
 - Page en anglais → LLM traduit en français
-- Playwright requis (rate-limit sur requests)
+- Jina Reader en premier, Playwright en fallback (site bloque les IPs Oracle)
 - À lancer le 1er de chaque mois (via n8n cron séparé)
 """
 
@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import re
+import requests
 import unicodedata
 from datetime import datetime, timedelta
 
@@ -95,46 +96,65 @@ def _current_month_url() -> str:
     return f"{BASE}/paris-events-calendar/whats-on-{MONTHS_EN[now.month - 1]}-{now.year}/"
 
 
+JINA_BASE = "https://r.jina.ai/"
+JINA_HEADERS = {
+    "Accept": "text/plain",
+    "User-Agent": "Mozilla/5.0 (compatible; FlaneurBot/1.0)",
+}
+
+
+def _fetch_jina(url: str) -> str:
+    try:
+        resp = requests.get(
+            JINA_BASE + url,
+            headers=JINA_HEADERS,
+            timeout=20,
+        )
+        if resp.status_code == 200 and len(resp.text) >= 500:
+            return resp.text
+    except Exception:
+        logger.debug("[secrets_of_paris] Jina échoué pour %s", url)
+    return ""
+
+
 async def _scrape_async() -> list[dict]:
     url = _current_month_url()
     logger.info("[secrets_of_paris] URL du mois : %s", url)
 
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled"],
-        )
-        ctx = await browser.new_context(
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            locale="en-US",
-        )
-        await ctx.route("**/*.{png,jpg,jpeg,gif,webp,woff2,woff,ttf}", lambda r: r.abort())
-        page = await ctx.new_page()
+    page_text = _fetch_jina(url)
 
-        try:
-            resp = await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
-            if not resp or resp.status >= 400:
-                logger.error("[secrets_of_paris] Page inaccessible : HTTP %s", resp.status if resp else "?")
+    if not page_text:
+        logger.info("[secrets_of_paris] Jina vide, fallback Playwright")
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(
+                headless=True,
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+            ctx = await browser.new_context(
+                user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                locale="en-US",
+            )
+            await ctx.route("**/*.{png,jpg,jpeg,gif,webp,woff2,woff,ttf}", lambda r: r.abort())
+            page = await ctx.new_page()
+            try:
+                resp = await page.goto(url, wait_until="domcontentloaded", timeout=30_000)
+                if not resp or resp.status >= 400:
+                    logger.error("[secrets_of_paris] Playwright aussi bloqué : HTTP %s", resp.status if resp else "?")
+                    await browser.close()
+                    return []
+                await page.wait_for_timeout(2000)
+                for _ in range(5):
+                    await page.evaluate("window.scrollBy(0, 1500)")
+                    await page.wait_for_timeout(500)
+                page_text = await page.evaluate("""() => {
+                    const el = document.querySelector('article, .entry-content, main, body');
+                    return el ? el.innerText : document.body.innerText;
+                }""")
+            except Exception:
+                logger.exception("[secrets_of_paris] Playwright aussi échoué")
                 await browser.close()
                 return []
-            await page.wait_for_timeout(2000)
-
-            # Scroll pour charger le contenu lazy-loaded
-            for _ in range(5):
-                await page.evaluate("window.scrollBy(0, 1500)")
-                await page.wait_for_timeout(500)
-
-            page_text = await page.evaluate("""() => {
-                const el = document.querySelector('article, .entry-content, main, body');
-                return el ? el.innerText : document.body.innerText;
-            }""")
-
-        except Exception:
-            logger.exception("[secrets_of_paris] Erreur chargement page")
             await browser.close()
-            return []
-
-        await browser.close()
 
     if not page_text or len(page_text) < 300:
         logger.warning("[secrets_of_paris] Contenu trop court (%d chars)", len(page_text))
