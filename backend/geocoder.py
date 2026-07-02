@@ -61,7 +61,7 @@ def _adresse_gouv(adresse: str) -> tuple[float | None, float | None]:
     try:
         resp = _requests.get(
             'https://api-adresse.data.gouv.fr/search/',
-            params={'q': adresse, 'limit': 1, 'citycode': '75'},
+            params={'q': adresse, 'limit': 1},
             timeout=5,
         )
         resp.raise_for_status()
@@ -95,7 +95,16 @@ def _nominatim_freetext(query: str) -> tuple[float | None, float | None]:
         resp.raise_for_status()
         results = resp.json()
         if results:
-            return float(results[0]['lat']), float(results[0]['lon'])
+            lat = float(results[0]['lat'])
+            lng = float(results[0]['lon'])
+            lat_min, lng_min, lat_max, lng_max = _IDF_BBOX
+            if not (lat_min <= lat <= lat_max and lng_min <= lng <= lng_max):
+                logger.debug(
+                    "Nominatim freetext hors IDF pour '%s' : %.4f, %.4f — ignoré",
+                    query, lat, lng
+                )
+                return None, None
+            return lat, lng
     except Exception:
         pass
     return None, None
