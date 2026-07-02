@@ -99,7 +99,7 @@ class TimeOutParis(JinaBaseScraper):
         match = re.search(r'\n# ', page_text)
         if match:
             start = max(0, match.start() - 100)
-            content = page_text[start:start + 12000]
+            content = page_text[start:start + 6000]
         else:
-            content = page_text[4000:][:12000]
+            content = page_text[4000:][:6000]
         return instruction + content

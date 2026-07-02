@@ -54,7 +54,12 @@ def extract_with_llm(page_text: str) -> dict:
 Extrait ces informations et réponds UNIQUEMENT en JSON valide, sans commentaire.
 
 Champs attendus :
-- titre        : nom propre du lieu ou événement (court, ex: "Mondial Tissus", "Musée Rodin")
+- titre        : nom propre de l'événement, de l'exposition ou du lieu.
+                     Si l'article décrit un événement dans un lieu connu,
+                     le titre est le nom de l'événement/exposition, pas le lieu.
+                     Ex: "Exposition Pomellato" et non "Palais de Tokyo",
+                     "Festival Yardland" et non "Hippodrome de Vincennes",
+                     "L'Alcazar" si c'est le restaurant lui-même qui est décrit.
 - description  : résumé en 2 phrases max, neutre et factuel
 - adresse      : adresse complète avec numéro + rue + code postal
     parisien si disponible. Si pas d'adresse de rue
