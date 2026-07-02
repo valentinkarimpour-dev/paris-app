@@ -15,6 +15,9 @@ _HEADERS = {"User-Agent": "flaneur-app/1.0 (contact: flaneur@localhost)"}
 _NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
 
+_IDF_BBOX = (48.0, 1.5, 49.2, 3.5)  # lat_min, lng_min, lat_max, lng_max
+
+
 def _nominatim(adresse: str) -> tuple[float | None, float | None]:
     query = adresse.strip()
     if "paris" not in query.lower() and "france" not in query.lower():
@@ -26,7 +29,15 @@ def _nominatim(adresse: str) -> tuple[float | None, float | None]:
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
             if data:
-                lat, lng = float(data[0]["lat"]), float(data[0]["lon"])
+                lat = float(data[0]["lat"])
+                lng = float(data[0]["lon"])
+                lat_min, lng_min, lat_max, lng_max = _IDF_BBOX
+                if not (lat_min <= lat <= lat_max and lng_min <= lng <= lng_max):
+                    logger.debug(
+                        "Nominatim hors IDF pour '%s' : %.4f, %.4f — ignoré",
+                        adresse, lat, lng
+                    )
+                    return None, None
                 logger.debug("Nominatim '%s' → %.4f, %.4f", adresse, lat, lng)
                 return lat, lng
             logger.debug("Nominatim : aucun résultat pour '%s'", adresse)
