@@ -306,7 +306,10 @@ def upsert_museum(m: dict) -> bool:
         return False
     try:
         with _conn() as conn:
-            cur = conn.execute("""
+            is_new = conn.execute(
+                "SELECT 1 FROM museum_list WHERE museum_name = :museum_name", m
+            ).fetchone() is None
+            conn.execute("""
                 INSERT INTO museum_list (museum_name, museum_lat, museum_lng, museum_location, museum_url, source, scraped_at)
                 VALUES (:museum_name, :museum_lat, :museum_lng, :museum_location, :museum_url, :source, :scraped_at)
                 ON CONFLICT(museum_name) DO UPDATE SET
@@ -317,7 +320,7 @@ def upsert_museum(m: dict) -> bool:
                     scraped_at      = excluded.scraped_at
             """, m)
             conn.commit()
-            return cur.rowcount == 1
+            return is_new
     except Exception:
         logger.exception("upsert_museum failed pour %s", m.get("museum_name"))
         return False
