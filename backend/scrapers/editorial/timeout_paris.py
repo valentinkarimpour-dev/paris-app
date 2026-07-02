@@ -166,6 +166,13 @@ class TimeOutParisScraper(BaseScraper):
                             item["date_debut"], item.get("titre")
                         )
                         continue
+                    if item.get("categorie") == "restaurant" \
+                            and not item.get("date_debut"):
+                        logger.debug(
+                            "[timeout_paris] item ignoré (restaurant sans date) : %s",
+                            item.get("titre")
+                        )
+                        continue
                     adresse = item.get("adresse") or ""
                     lat, lng = None, None
                     if adresse:
@@ -236,6 +243,12 @@ class TimeOutParisScraper(BaseScraper):
                     logger.debug(
                         "[timeout_paris] skipped (date passée %s) : %s",
                         data["date_debut"], data.get("titre")
+                    )
+                    continue
+                if cat == "restaurant" and not data.get("date_debut"):
+                    logger.debug(
+                        "[timeout_paris] skipped (restaurant sans date_debut) : %s",
+                        url
                     )
                     continue
                 adresse = data.get("adresse") or ""

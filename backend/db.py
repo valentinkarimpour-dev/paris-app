@@ -19,6 +19,7 @@ _SOURCE_TABLES = [
     "parisbouge_bars",
     "parisbouge_expos",
     "sortiraparis",
+    "sortiraparis_restaurant",
     "newtable",
     "lebonbon_news",
     "lebonbon_food",
