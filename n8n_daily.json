@@ -79,7 +79,7 @@
       "parameters": {
         "select": "channel",
         "channelId": { "value": "n8n-workflow-execution", "__rl": true, "mode": "name" },
-        "text": "=:white_check_mark: [DAILY] — run terminé\n\n• Events insérés : {{ $('Get Last Run').item.json.total_inserted }}\n• Scrapers OK : {{ $('Get Last Run').item.json.completed }}/{{ $('Get Last Run').item.json.total_scrapers }}\n• Déclenché à : {{ $('Get Last Run').item.json.triggered_at }}\n\nInsérés par source :\n{{ Object.entries($('Get Last Run').item.json.scrapers).filter(([k,v]) => v.inserted > 0).map(([k,v]) => `• ${k}: +${v.inserted}`).join('\\n') || '_aucun_' }}\n\nSupprimés (expirés) :\n{{ Object.entries($('Purge Old Events').item.json.deleted_by_source).map(([k,v]) => `• ${k}: -${v}`).join('\\n') || '_aucun_' }}\n_Automated with this n8n workflow_",
+        "text": "=:white_check_mark: [DAILY] — run terminé\n\n• Scrapers OK : {{ $('Get Last Run').item.json.completed }}/{{ $('Get Last Run').item.json.total_scrapers }}\n• Déclenché à : {{ $('Get Last Run').item.json.triggered_at }}\n\nSupprimés (expirés) :\n{{ Object.entries($('Purge Old Events').item.json.deleted_by_source).map(([k,v]) => `• ${k}: -${v}`).join('\\n') || '_aucun_' }}\n\nAjoutés :\n{{ Object.entries($('Get Last Run').item.json.scrapers).map(([k,v]) => { const purged = ($('Purge Old Events').item.json.deleted_by_source || {})[k] || 0; const net = v.inserted - purged; return net > 0 ? `• ${k}: +${net}` : null; }).filter(x => x).join('\\n') || '_aucun_' }}\n_Automated with this n8n workflow_",
         "otherOptions": {}
       },
       "name": "Slack OK",
