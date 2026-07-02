@@ -90,6 +90,18 @@ def _nominatim_freetext(query: str) -> tuple[float | None, float | None]:
     return None, None
 
 
+def geocode_freetext(query: str) -> tuple[float | None, float | None]:
+    """Géocode un nom de lieu ou de venue sans adresse structurée."""
+    if not query or not query.strip():
+        return None, None
+    key = f"freetext:{query.strip()}"
+    if key in _cache:
+        return _cache[key]
+    result = _nominatim_freetext(query)
+    _cache[key] = result
+    return result
+
+
 def geocode(adresse: str) -> tuple[float | None, float | None]:
     if not adresse or not adresse.strip():
         return None, None

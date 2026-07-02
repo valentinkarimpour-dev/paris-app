@@ -163,6 +163,21 @@ class JinaBaseScraper(BaseScraper):
                             self.name, url
                         )
                         continue
+                # Géocodage freetext via titre si adresse absente
+                if not data.get("adresse") and data.get("titre"):
+                    from geocoder import geocode_freetext
+                    lat, lng = geocode_freetext(data["titre"])
+                    if lat:
+                        data["lat"] = lat
+                        data["lng"] = lng
+                # Filtre localisation (TimeOutParis uniquement via require_location)
+                if getattr(self, 'require_location', False) and not data.get("adresse"):
+                    if not data.get("lat"):
+                        logger.debug(
+                            "[%s] skipped — aucune localisation identifiable : %s",
+                            self.name, data.get("titre", "?")
+                        )
+                        continue
                 data["url"] = url
                 data["source"] = self.name
                 results.append(data)

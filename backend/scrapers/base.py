@@ -131,6 +131,8 @@ Chaque élément du tableau doit avoir :
     musique, marche, cinema, spectacle, sport, atelier, boutique
     Si aucune ne convient, réponds "autre: [ta suggestion en minuscules]" (ex: "autre: festival")
 
+IMPORTANT : sois concis dans les descriptions (1 phrase max) pour permettre d'extraire tous les items sans troncature.
+
 Contenu :
 {page_text[:3000]}"""
 
@@ -138,7 +140,7 @@ Contenu :
         resp = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=1500,
+            max_tokens=3000,
             temperature=0,
         )
         raw = resp.choices[0].message.content.strip()
