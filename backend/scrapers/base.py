@@ -56,7 +56,15 @@ Extrait ces informations et réponds UNIQUEMENT en JSON valide, sans commentaire
 Champs attendus :
 - titre        : nom propre du lieu ou événement (court, ex: "Mondial Tissus", "Musée Rodin")
 - description  : résumé en 2 phrases max, neutre et factuel
-- adresse      : adresse complète avec numéro + rue + code postal parisien (null si absente)
+- adresse      : adresse complète avec numéro + rue + code postal
+    parisien si disponible. Si pas d'adresse de rue
+    mais un lieu nommé est mentionné (musée, salle,
+    parc, palais, hippodrome, stade, jardin, galerie),
+    retourner le nom du lieu seul
+    (ex: "Palais de Tokyo", "Jardins des Tuileries",
+    "Hippodrome de Vincennes", "Grande Halle de la Villette").
+    null uniquement si aucune localisation n'est
+    mentionnée dans le texte.
 - date_debut   : date d'ouverture ou de début au format YYYY-MM-DD.
     Si seul le jour et le mois sont mentionnés sans l'année, utilise l'année en cours ({date.today().year}).
     Exemples de patterns à détecter :
@@ -134,7 +142,7 @@ Chaque élément du tableau doit avoir :
 IMPORTANT : sois concis dans les descriptions (1 phrase max) pour permettre d'extraire tous les items sans troncature.
 
 Contenu :
-{page_text[:3000]}"""
+{page_text[:10000]}"""
 
     try:
         resp = client.chat.completions.create(

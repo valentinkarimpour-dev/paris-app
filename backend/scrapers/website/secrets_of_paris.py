@@ -93,7 +93,7 @@ Contenu :
 
 def _current_month_url() -> str:
     now = datetime.now()
-    return f"{BASE}/paris-events-calendar/whats-on-{MONTHS_EN[now.month - 1]}-{now.year}/"
+    return f"{BASE}/paris-events-calendar/{MONTHS_EN[now.month - 1]}-{now.year}/"
 
 
 JINA_BASE = "https://r.jina.ai/"

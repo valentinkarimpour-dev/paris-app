@@ -80,7 +80,12 @@ class TimeOutParis(JinaBaseScraper):
             start = max(0, match.start() - 100)
             body = page_text[start:start + 5000]
         else:
-            body = page_text[3500:][:5000]
+            # Pas de H1 détecté — si article court, envoyer le tout
+            # Si article long (navigation sans H1), sauter les 3500 premiers chars
+            if len(page_text) < 4500:
+                body = page_text
+            else:
+                body = page_text[3500:][:5000]
         return hint_block + body
 
     def _prepare_text_list(self, page_text: str) -> str:
