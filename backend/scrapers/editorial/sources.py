@@ -22,6 +22,17 @@ class SortirAParis(JinaBaseScraper):
     ]
 
 
+    def _prepare_text(self, page_text: str) -> str:
+        """SortirAParis : adresse dans 'Infos pratiques' en fin de page.
+        On envoie le début (date, description) + la fin (adresse).
+        """
+        head = page_text[:3000]
+        tail = page_text[-2000:]
+        if len(page_text) > 5000:
+            return head + "\n\n[...contenu intermédiaire omis...]\n\n" + tail
+        return page_text
+
+
 class TimeOutParis(JinaBaseScraper):
     name = "timeout_paris"
     base_url = "https://www.timeout.fr"

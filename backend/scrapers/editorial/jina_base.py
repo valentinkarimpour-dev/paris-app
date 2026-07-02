@@ -100,7 +100,7 @@ class JinaBaseScraper(BaseScraper):
             if not article_content:
                 logger.warning("[%s] article vide : %s", self.name, url)
                 continue
-            data = extract_with_llm(article_content)
+            data = extract_with_llm(self._prepare_text(article_content))
             if not data:
                 continue
             if self.require_dates:
@@ -132,3 +132,10 @@ class JinaBaseScraper(BaseScraper):
                 seen_titres.add(titre)
                 deduplicated.append(item)
         return deduplicated
+
+    def _prepare_text(self, page_text: str) -> str:
+        """Prépare le texte avant envoi au LLM.
+        Surchargeable par les sous-classes pour adapter la découpe.
+        Par défaut : texte brut complet (la troncature est dans extract_with_llm).
+        """
+        return page_text
