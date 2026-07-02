@@ -6,22 +6,24 @@ cd "$SCRIPT_DIR"
 
 echo "── Flâneur Backend ─────────────────────────"
 
-# Venv
-if [ ! -d ".venv" ]; then
-  echo "▶ Création du venv Python..."
-  python3 -m venv .venv
-fi
+VENV="$SCRIPT_DIR/backend/.venv"
+PYTHON="$VENV/bin/python3"
+PIP="$VENV/bin/pip"
 
-source .venv/bin/activate
+# Venv
+if [ ! -d "$VENV" ]; then
+  echo "▶ Création du venv Python dans backend/.venv..."
+  python3 -m venv "$VENV"
+fi
 
 # Dépendances
 echo "▶ Installation des dépendances..."
-pip install -q -r backend/requirements.txt
+"$PIP" install -q -r backend/requirements.txt
 
 # Playwright Chromium
-if ! python3 -c "from playwright.sync_api import sync_playwright; sync_playwright().__enter__().chromium.executable_path" 2>/dev/null | grep -q "chromium"; then
+if ! "$PYTHON" -c "from playwright.sync_api import sync_playwright; sync_playwright().__enter__().chromium.executable_path" 2>/dev/null | grep -q "chromium"; then
   echo "▶ Installation de Chromium (Playwright)..."
-  playwright install chromium
+  "$VENV/bin/playwright" install chromium
 fi
 
 echo "▶ Démarrage du backend sur http://localhost:8000"
@@ -29,6 +31,7 @@ echo "   Frontend  : http://localhost:8000"
 echo "   Datasette : http://localhost:8001"
 echo "────────────────────────────────────────────"
 
-python3 -m datasette backend/events.db --port 8001 &
+"$PYTHON" -m datasette backend/events.db --port 8001 &
 
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+cd "$SCRIPT_DIR/backend"
+"$VENV/bin/uvicorn" main:app --reload --host 0.0.0.0 --port 8000
