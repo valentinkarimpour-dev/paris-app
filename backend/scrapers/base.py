@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from abc import ABC, abstractmethod
-from datetime import date
+from datetime import datetime, date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -65,14 +65,7 @@ Champs attendus :
       "du 20 juin au 5 juillet" → date_debut = "{date.today().year}-06-20"
       "depuis le 1er mai" → "{date.today().year}-05-01"
     null si aucune date de début n'est mentionnée ou inférable.
-- date_fin     : date de fermeture ou de fin au format YYYY-MM-DD.
-    Exemples de patterns à détecter :
-      "jusqu'au 31 août" → "{date.today().year}-08-31"
-      "du 20 juin au 5 juillet" → date_fin = "{date.today().year}-07-05"
-      "pour 3 semaines" → date_debut + 21 jours
-      "pendant tout l'été" → null (trop vague)
-    null si l'événement est permanent (restaurant, bar, galerie ouverte en continu)
-    ou si la fin n'est pas mentionnée.
+- date_fin      : YYYY-MM-DD | null si lieu permanent. Exemples dates explicites : 'jusqu'au 31 août' → {date.today().year}-08-31 ; 'du 20 juin au 5 juillet' → {date.today().year}-07-05 ; 'pour 3 semaines' → date_debut + 21j. Si date_fin absente mais expression saisonnière décrit la DURÉE : 'pour l'été'/'tout l'été'/'jusqu'à la rentrée' → {datetime.now().year}-09-22 ; 'pour l'hiver' → {datetime.now().year + 1}-03-20 ; 'pour le printemps' → {datetime.now().year}-06-21 ; 'jusqu'à l'automne' → {datetime.now().year}-12-21. N'inférer QUE si l'expression qualifie la durée. 'ambiance d'été', 'cocktails estivaux' → null.
 - duree_jours  : si date_debut et date_fin sont tous deux présents, calcule la différence en jours.
     Sinon convertis les expressions textuelles :
     "1 semaine" → 7, "2 semaines" → 14, "1 mois" → 30, "2 mois" → 60.
@@ -91,7 +84,7 @@ Texte de l'article :
         resp = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=200,
+            max_tokens=400,
             temperature=0,
         )
         raw = resp.choices[0].message.content.strip()
@@ -145,7 +138,7 @@ Contenu :
         resp = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=800,
+            max_tokens=1500,
             temperature=0,
         )
         raw = resp.choices[0].message.content.strip()
