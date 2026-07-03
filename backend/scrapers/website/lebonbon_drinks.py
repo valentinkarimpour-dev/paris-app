@@ -70,14 +70,13 @@ _CAT_HINTS = [
 
 
 def _resolve_categorie(llm_cat: str, href: str, title: str) -> str:
-    """Si le LLM ne renvoie pas une catégorie prioritaire, infère depuis slug + titre."""
-    if llm_cat in _PRIORITY_CATS:
-        return llm_cat
     slug = href.rstrip("/").split("/")[-1]
     for pattern, cat in _CAT_HINTS:
         if pattern.search(slug) or pattern.search(title):
             return cat
-    return llm_cat
+    if llm_cat in _PRIORITY_CATS:
+        return llm_cat
+    return "bar"
 
 
 async def _scrape_async() -> list[dict]:
@@ -142,7 +141,15 @@ async def _scrape_async() -> list[dict]:
 
             page_text = page_data.get("text", "")
             if len(page_text) >= 100:
-                extracted = extract_with_llm(page_text)
+                _prefix = (
+                    "[RÈGLE DATES SAISONNIÈRES : si l'article mentionne "
+                    "'terrasse estivale', 'saison 2026', 'tout l'été', "
+                    "'pour l'été', 'cet été' → inférer "
+                    "date_debut=YYYY-06-01 et date_fin=YYYY-09-22 "
+                    "avec l'année mentionnée ou l'année courante. "
+                    "Ne pas laisser date_fin null dans ces cas.]\n\n"
+                )
+                extracted = extract_with_llm(_prefix + page_text[:3000])
                 if extracted.get("titre"):
                     date_fin = None
                     if extracted.get("date_debut") and extracted.get("duree_jours"):
