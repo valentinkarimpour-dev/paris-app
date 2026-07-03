@@ -22,6 +22,7 @@ _SOURCE_TABLES = [
     "sortiraparis_restaurant",
     "sortiraparis_cafes",
     "sortiraparis_expos",
+    "sortiraparis_popup",
     "newtable",
     "lebonbon_news",
     "lebonbon_food",
