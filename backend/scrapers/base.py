@@ -222,11 +222,13 @@ def extract_venue_llm(title: str, description: str = "") -> tuple[str, str]:
         logger.debug("Groq extraction échouée : %s", e)
         return "", ""
 
-VALID_CATS = {
+VALID_CATEGORIES: frozenset[str] = frozenset({
     "restaurant", "bar", "exposition", "musee", "galerie", "cafe",
     "brocante", "vide-grenier", "popup", "wellness", "rooftop",
     "musique", "marche", "cinema", "spectacle", "sport", "atelier", "boutique",
-}
+})
+
+VALID_CATS = VALID_CATEGORIES  # rétrocompat
 
 _ALIASES = {
     "expo": "exposition", "musée": "musee", "galerie d'art": "galerie",
@@ -238,11 +240,10 @@ _ALIASES = {
 
 
 def _normalize_categorie(cat: str) -> str:
-    """Garantit que la catégorie est dans VALID_CATS ou au format 'autre: suggestion'."""
     if not cat:
         return "autre: inconnu"
     c = cat.lower().strip()
-    if c in VALID_CATS:
+    if c in VALID_CATEGORIES:
         return c
     if c == "autre":
         return "autre"

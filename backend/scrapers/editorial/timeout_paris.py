@@ -6,12 +6,16 @@ from datetime import datetime, timedelta
 
 import httpx
 
-from ..base import BaseScraper, extract_with_llm, extract_list_with_llm
+from ..base import BaseScraper, extract_with_llm, extract_list_with_llm, VALID_CATEGORIES
 import geocoder
 
 logger = logging.getLogger(__name__)
 
 _UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+EPHEMERES = VALID_CATEGORIES - {
+    "restaurant", "bar", "cafe", "musee", "galerie", "wellness", "boutique",
+}
 
 _RE_QUAND = re.compile(
     r'\*{1,2}Quand\s*\??\*{1,2}\s*:?\s*(.+?)(?:\n|\.?\s*\*{1,2})',
@@ -225,10 +229,6 @@ class TimeOutParisScraper(BaseScraper):
                     hints = self._extract_quand_ou(page_text)
                     if hints.get("adresse_raw"):
                         data["adresse"] = hints["adresse_raw"]
-                EPHEMERES = {
-                    "exposition", "popup", "galerie", "musique",
-                    "spectacle", "cinema", "atelier", "marche",
-                }
                 cat = data.get("categorie", "")
                 est_ephemere = cat in EPHEMERES or cat.startswith("autre:")
                 if est_ephemere and not (

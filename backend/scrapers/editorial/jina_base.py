@@ -7,9 +7,13 @@ import unicodedata as _uc
 import httpx
 from playwright.async_api import async_playwright
 
-from ..base import BaseScraper, extract_with_llm, extract_list_with_llm
+from ..base import BaseScraper, extract_with_llm, extract_list_with_llm, VALID_CATEGORIES
 
 logger = logging.getLogger(__name__)
+
+_CATEGORIES_EPHEMERES = VALID_CATEGORIES - {
+    "restaurant", "bar", "cafe", "musee", "galerie", "wellness", "boutique",
+}
 
 _UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
@@ -163,13 +167,9 @@ class JinaBaseScraper(BaseScraper):
                 if not data:
                     continue
                 if self.require_dates:
-                    CATEGORIES_EPHEMERES = {
-                        "exposition", "popup", "galerie", "musique",
-                        "spectacle", "cinema", "atelier", "marche",
-                    }
                     categorie = data.get("categorie", "")
                     est_ephemere = (
-                        categorie in CATEGORIES_EPHEMERES
+                        categorie in _CATEGORIES_EPHEMERES
                         or categorie.startswith("autre:")
                     )
                     if est_ephemere and not (data.get("date_debut") and data.get("date_fin")):

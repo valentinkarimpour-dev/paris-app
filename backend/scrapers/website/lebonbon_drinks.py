@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta
 
 from playwright.async_api import async_playwright
 
-from ..base import BaseScraper, extract_with_llm
+from ..base import BaseScraper, extract_with_llm, VALID_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ def _matches(href: str, text: str, pattern: re.Pattern) -> bool:
     return bool(pattern.search(slug) or pattern.search(text))
 
 
-_PRIORITY_CATS = {"rooftop", "bar", "cafe"}
+_PRIORITY_CATS = VALID_CATEGORIES & {"rooftop", "bar", "cafe"}
 
 _CAT_HINTS = [
     (re.compile(r"rooftop|terrasse|toit\b", re.I), "rooftop"),
