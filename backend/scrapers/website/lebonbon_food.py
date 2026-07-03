@@ -14,6 +14,7 @@ from datetime import date
 from playwright.async_api import async_playwright
 
 from ..base import BaseScraper, extract_with_llm
+import geocoder
 
 logger = logging.getLogger(__name__)
 
@@ -133,17 +134,29 @@ async def _scrape_async() -> list[dict]:
                         except Exception:
                             pass
 
-                    events.append({
-                        "titre":       extracted.get("titre", ""),
-                        "description": extracted.get("description", ""),
-                        "adresse":     extracted.get("adresse") or "",
-                        "date_debut":  extracted.get("date_debut"),
-                        "date_fin":    date_fin,
-                        "categorie":   extracted.get("categorie", "autre"),
-                        "source":      "lebonbon_food",
-                        "url":         art["href"],
-                        "image_url":   page_data.get("img"),
-                    })
+                    adresse = extracted.get("adresse") or ""
+                    lat, lng = None, None
+                    if adresse:
+                        lat, lng = geocoder.geocode(adresse)
+                    if not lat:
+                        logger.debug(
+                            "[lebonbon_food] skipped (pas de coords) : %s",
+                            extracted.get("titre", art["href"])
+                        )
+                    else:
+                        events.append({
+                            "titre":       extracted.get("titre", ""),
+                            "description": extracted.get("description", ""),
+                            "adresse":     adresse,
+                            "lat":         lat,
+                            "lng":         lng,
+                            "date_debut":  extracted.get("date_debut"),
+                            "date_fin":    date_fin,
+                            "categorie":   extracted.get("categorie", "autre"),
+                            "source":      "lebonbon_food",
+                            "url":         art["href"],
+                            "image_url":   page_data.get("img"),
+                        })
                 else:
                     logger.debug("[lebonbon_food] LLM sans résultat pour %s", art["href"])
 
@@ -160,3 +173,25 @@ class LeBonbonFood(BaseScraper):
 
     def scrape(self) -> list[dict]:
         return asyncio.run(_scrape_async())
+
+
+if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    logging.basicConfig(level=logging.DEBUG)
+
+    scraper = LeBonbonFood()
+    events = scraper.scrape()
+
+    print(f"\n{'═'*60}")
+    print(f"RÉSULTAT : {len(events)} events extraits")
+    print(f"{'═'*60}")
+    for ev in events:
+        print(f"\n  titre      : {ev['titre']}")
+        print(f"  date_debut : {ev['date_debut']}")
+        print(f"  date_fin   : {ev['date_fin']}")
+        print(f"  adresse    : {ev['adresse']}")
+        print(f"  lat/lng    : {ev.get('lat')}, {ev.get('lng')}")
+        print(f"  categorie  : {ev['categorie']}")
+        print(f"  url        : {ev['url']}")
