@@ -5,6 +5,7 @@ from .website.parisbouge_expos import ParisBougeExpos
 from .website.lebonbon_news import LeBonbonNews
 from .website.lebonbon_food import LeBonbonFood
 from .website.lebonbon_drinks import LeBonbonDrinks
+from .website.lebonbon_healthy import LeBonBonHealthy
 from .website.parismusee_expos import ParisMuseeExpos
 from .website.museofile import MuseofileScraper
 from .website.newtable import NewTable
@@ -34,6 +35,7 @@ ALL_SCRAPERS = [
     LeBonbonNews,
     LeBonbonFood,
     LeBonbonDrinks,
+    LeBonBonHealthy,
     NumeroPopup,
     InpiFoodScraper,
     InpiDrinksScraper,
