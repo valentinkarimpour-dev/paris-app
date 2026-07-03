@@ -20,6 +20,7 @@ from .opendata.inpi_api_drinks import InpiDrinksScraper
 from .editorial.sources import SortirAParis
 from .editorial.timeout_paris import TimeOutParisScraper as TimeOutParis
 from .editorial.sortiraparis_restaurant import SortirAParisRestaurant
+from .editorial.sortiraparis_cafes import SortirAParisCafes
 
 ALL_SCRAPERS = [
     ParisOpenData,
@@ -37,6 +38,7 @@ ALL_SCRAPERS = [
     SortirAParis,
     TimeOutParis,
     SortirAParisRestaurant,
+    SortirAParisCafes,
 ]
 
 

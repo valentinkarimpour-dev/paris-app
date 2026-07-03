@@ -12,7 +12,7 @@ import geocoder
 logger = logging.getLogger(__name__)
 
 ARTICLE_PATTERN = re.compile(
-    r"sortiraparis\.com/hotel-restaurant/restaurant/articles/\d+"
+    r"sortiraparis\.com/hotel-restaurant/cafe-tea-time/articles/\d+"
 )
 
 
@@ -32,12 +32,11 @@ def _fetch_jina(url: str) -> str:
         if resp.status_code == 200 and len(resp.text) > 500:
             return resp.text
     except Exception as e:
-        logger.debug("[sortiraparis_restaurant] Jina : %s", e)
+        logger.debug("[sortiraparis_cafes] Jina : %s", e)
     return ""
 
 
 def _strip_links(text: str) -> str:
-    """[texte](url) → texte, [![...](...)...](...) → vide"""
     text = re.sub(r'\[!\[[^\]]*\]\([^)]*\)\]\([^)]*\)', '', text)
     text = re.sub(r'!\[[^\]]*\]\([^)]*\)', '', text)
     text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
@@ -52,7 +51,6 @@ _VAGUE_ADDRESSES = re.compile(
 
 
 def _is_valid_address(adresse: str) -> bool:
-    """Retourne False si l'adresse est trop vague pour être géocodée."""
     if not adresse or len(adresse.strip()) < 10:
         return False
     if _VAGUE_ADDRESSES.match(adresse.strip()):
@@ -69,7 +67,6 @@ def _prepare_text(page_text: str) -> str:
         "comme date_debut — ce sont des dates éditoriales.]\n\n"
     )
 
-    # Prose : premier paragraphe après le bloc d'images post-H1
     h1_match = re.search(r'\n# ', page_text)
     h1_pos = h1_match.start() if h1_match else 19000
     prose_match = re.search(
@@ -82,7 +79,6 @@ def _prepare_text(page_text: str) -> str:
     else:
         head = page_text[h1_pos:h1_pos + 600]
 
-    # Infos pratiques : lieu + dates structurées
     infos_match = re.search(
         r'informations?\s+pratiques?', page_text, re.I
     )
@@ -98,12 +94,12 @@ def _prepare_text(page_text: str) -> str:
     return rule + head
 
 
-class SortirAParisRestaurant(BaseScraper):
-    name = "sortiraparis_restaurant"
+class SortirAParisCafes(BaseScraper):
+    name = "sortiraparis_cafes"
     base_url = "https://www.sortiraparis.com"
 
-    INDEX_URL = "https://www.sortiraparis.com/hotel-restaurant/restaurant"
-    MAX_ARTICLES = 10
+    INDEX_URL = "https://www.sortiraparis.com/hotel-restaurant/cafe-tea-time"
+    MAX_ARTICLES = 5
     CUTOFF_DAYS = 30
 
     def _extract_article_urls(self, content: str) -> list[str]:
@@ -116,14 +112,14 @@ class SortirAParisRestaurant(BaseScraper):
 
         index_content = _fetch_jina(self.INDEX_URL)
         if not index_content:
-            logger.warning("[sortiraparis_restaurant] index vide")
+            logger.warning("[sortiraparis_cafes] index vide")
             return []
 
         article_urls = self._extract_article_urls(
             index_content
         )[:self.MAX_ARTICLES]
         logger.info(
-            "[sortiraparis_restaurant] %d articles trouvés",
+            "[sortiraparis_cafes] %d articles trouvés",
             len(article_urls)
         )
 
@@ -134,7 +130,7 @@ class SortirAParisRestaurant(BaseScraper):
             page_text = _fetch_jina(url)
             if not page_text:
                 logger.warning(
-                    "[sortiraparis_restaurant] article vide : %s", url
+                    "[sortiraparis_cafes] article vide : %s", url
                 )
                 continue
 
@@ -142,16 +138,16 @@ class SortirAParisRestaurant(BaseScraper):
             if not data or not data.get("titre"):
                 continue
 
-            # Source éditoriale : date_debut obligatoire pour les restaurants
+            # Source éditoriale : date_debut obligatoire pour les cafes
             if not data.get("date_debut"):
                 logger.debug(
-                    "[sortiraparis_restaurant] skipped (pas de date_debut) : %s",
+                    "[sortiraparis_cafes] skipped (pas de date_debut) : %s",
                     data.get("titre")
                 )
                 continue
             if data["date_debut"] < cutoff:
                 logger.debug(
-                    "[sortiraparis_restaurant] skipped (date ancienne %s) : %s",
+                    "[sortiraparis_cafes] skipped (date ancienne %s) : %s",
                     data["date_debut"], data.get("titre")
                 )
                 continue
@@ -165,7 +161,7 @@ class SortirAParisRestaurant(BaseScraper):
                     d2 = _date.fromisoformat(date_fin_str)
                     if (d2 - d1).days > 365:
                         logger.debug(
-                            "[sortiraparis_restaurant] skipped (durée > 365j, lieu permanent) : %s",
+                            "[sortiraparis_cafes] skipped (durée > 365j, lieu permanent) : %s",
                             data.get("titre")
                         )
                         continue
@@ -182,7 +178,7 @@ class SortirAParisRestaurant(BaseScraper):
 
             if not lat:
                 logger.debug(
-                    "[sortiraparis_restaurant] skipped pas de lieu : %s",
+                    "[sortiraparis_cafes] skipped pas de lieu : %s",
                     data.get("titre")
                 )
                 continue
@@ -201,7 +197,7 @@ class SortirAParisRestaurant(BaseScraper):
                 "date_debut":  data.get("date_debut"),
                 "date_fin":    data.get("date_fin"),
                 "duree_jours": data.get("duree_jours"),
-                "categorie":   "restaurant",
+                "categorie":   "cafe",
                 "source":      self.name,
                 "url":         url,
                 "image_url":   None,
@@ -210,7 +206,7 @@ class SortirAParisRestaurant(BaseScraper):
             time.sleep(1)
 
         logger.info(
-            "[sortiraparis_restaurant] %d events extraits", len(results)
+            "[sortiraparis_cafes] %d events extraits", len(results)
         )
         return results
 
@@ -221,7 +217,7 @@ if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
     logging.basicConfig(level=logging.DEBUG)
 
-    scraper = SortirAParisRestaurant()
+    scraper = SortirAParisCafes()
     events = scraper.scrape()
 
     print(f"\n{'═'*60}")

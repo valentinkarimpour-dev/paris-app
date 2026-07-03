@@ -20,6 +20,7 @@ _SOURCE_TABLES = [
     "parisbouge_expos",
     "sortiraparis",
     "sortiraparis_restaurant",
+    "sortiraparis_cafes",
     "newtable",
     "lebonbon_news",
     "lebonbon_food",
