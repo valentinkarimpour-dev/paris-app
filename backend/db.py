@@ -18,7 +18,6 @@ _SOURCE_TABLES = [
     "parisbouge_restos",
     "parisbouge_bars",
     "parisbouge_expos",
-    "sortiraparis",
     "sortiraparis_restaurant",
     "sortiraparis_cafes",
     "sortiraparis_expos",
@@ -175,6 +174,10 @@ def init_db():
             except Exception:
                 pass
 
+        # ── Suppression des tables dépréciées ────────────────────────────────
+        for deprecated in ("events_sortiraparis", "events_timeout_debug"):
+            conn.execute(f"DROP TABLE IF EXISTS {deprecated}")
+
         # ── Tables par scraper ────────────────────────────────────────────────
         for src in _SOURCE_TABLES:
             conn.execute(_EVENT_TABLE_DDL.format(src=src))
@@ -182,12 +185,33 @@ def init_db():
             conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{src}_idate ON events_{src}(identified_date)")
             conn.execute(f"CREATE INDEX IF NOT EXISTS idx_{src}_cat  ON events_{src}(categorie)")
 
-        # ── Vue master_events (union de toutes les tables sources) ────────────
-        conn.execute("DROP VIEW IF EXISTS master_events")
-        union = "\n    UNION ALL\n    ".join(
-            f"SELECT * FROM events_{src}" for src in _SOURCE_TABLES
+        # ── Vue master_events (union dédupliquée par url) ─────────────────────
+        cols = (
+            "titre, description, adresse, lat, lng, "
+            "date_debut, date_fin, duree_jours, categorie, prix, "
+            "source, url, image_url, scraped_at, identified_date, "
+            "COALESCE(location_region, 'paris') AS location_region"
         )
-        conn.execute(f"CREATE VIEW master_events AS\n    {union}")
+        union = "\n        UNION ALL\n        ".join(
+            f"SELECT {cols} FROM events_{src}" for src in _SOURCE_TABLES
+        )
+        conn.execute("DROP VIEW IF EXISTS master_events")
+        conn.execute(f"""CREATE VIEW master_events AS
+    SELECT titre, description, adresse, lat, lng,
+           date_debut, date_fin, duree_jours, categorie, prix,
+           source, url, image_url, scraped_at, identified_date,
+           location_region
+    FROM (
+        SELECT *,
+               ROW_NUMBER() OVER (
+                   PARTITION BY url
+                   ORDER BY scraped_at ASC
+               ) AS _rn
+        FROM (
+            {union}
+        ) AS combined
+    ) AS ranked
+    WHERE _rn = 1""")
 
         # ── Migration : données existantes → tables sources ───────────────────
         # Certaines sources historiques ont un nom différent dans la colonne source

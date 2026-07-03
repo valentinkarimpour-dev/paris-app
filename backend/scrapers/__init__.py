@@ -37,7 +37,6 @@ ALL_SCRAPERS = [
     NumeroPopup,
     InpiFoodScraper,
     InpiDrinksScraper,
-    SortirAParis,
     TimeOutParis,
     SortirAParisRestaurant,
     SortirAParisCafes,
