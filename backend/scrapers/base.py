@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re as _re_region
 import sys
 from abc import ABC, abstractmethod
 from datetime import datetime, date
@@ -11,6 +12,22 @@ import db
 import geocoder
 
 logger = logging.getLogger(__name__)
+
+_IDF_DEPTS = frozenset({'91', '92', '93', '94', '95'})
+
+
+def _classify_region(adresse: str | None, lat: float | None) -> str:
+    """Classifie 'paris' ou 'ile_de_france' depuis adresse ou lat."""
+    if adresse:
+        m = _re_region.search(r'\b(75|91|92|93|94|95)\d{3}\b', adresse)
+        if m:
+            dept = m.group(1)
+            return 'ile_de_france' if dept in _IDF_DEPTS else 'paris'
+    if lat is not None:
+        if lat < 48.815 or lat > 48.905:
+            return 'ile_de_france'
+    return 'paris'
+
 
 _groq_client = None
 
@@ -336,6 +353,12 @@ class BaseScraper(ABC):
                 lat, lng = geocoder.geocode(ev["adresse"])
                 ev["lat"] = lat
                 ev["lng"] = lng
+
+            # Classification région
+            if not ev.get("location_region"):
+                ev["location_region"] = _classify_region(
+                    ev.get("adresse"), ev.get("lat")
+                )
 
             # Log les suggestions "autre: X" pour revue ultérieure
             cat = ev.get("categorie", "")

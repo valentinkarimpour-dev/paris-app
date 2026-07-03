@@ -21,6 +21,7 @@ from .editorial.sources import SortirAParis
 from .editorial.timeout_paris import TimeOutParisScraper as TimeOutParis
 from .editorial.sortiraparis_restaurant import SortirAParisRestaurant
 from .editorial.sortiraparis_cafes import SortirAParisCafes
+from .editorial.sortiraparis_expos import SortirAParisExpos
 
 ALL_SCRAPERS = [
     ParisOpenData,
@@ -39,6 +40,7 @@ ALL_SCRAPERS = [
     TimeOutParis,
     SortirAParisRestaurant,
     SortirAParisCafes,
+    SortirAParisExpos,
 ]
 
 

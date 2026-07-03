@@ -21,6 +21,7 @@ _SOURCE_TABLES = [
     "sortiraparis",
     "sortiraparis_restaurant",
     "sortiraparis_cafes",
+    "sortiraparis_expos",
     "newtable",
     "lebonbon_news",
     "lebonbon_food",
@@ -50,7 +51,8 @@ _EVENT_TABLE_DDL = """
         url             TEXT UNIQUE,
         image_url       TEXT,
         scraped_at      TEXT,
-        identified_date TEXT
+        identified_date TEXT,
+        location_region TEXT DEFAULT 'paris'
     )
 """
 
@@ -162,6 +164,16 @@ def init_db():
             WHERE identified_date IS NULL AND scraped_at IS NOT NULL
         """)
 
+        # Migration : location_region pour les tables existantes
+        for src in _SOURCE_TABLES:
+            try:
+                conn.execute(
+                    f"ALTER TABLE events_{src} "
+                    f"ADD COLUMN location_region TEXT DEFAULT 'paris'"
+                )
+            except Exception:
+                pass
+
         # ── Tables par scraper ────────────────────────────────────────────────
         for src in _SOURCE_TABLES:
             conn.execute(_EVENT_TABLE_DDL.format(src=src))
@@ -213,6 +225,7 @@ def insert_event(ev: dict) -> bool:
     now = datetime.now()
     ev.setdefault("scraped_at", now.isoformat(timespec="seconds"))
     ev.setdefault("identified_date", now.strftime("%Y-%m-%d"))
+    ev.setdefault("location_region", "paris")
 
     # Normalisation des champs texte libres
     for field in ("titre", "description", "adresse"):
@@ -227,11 +240,13 @@ def insert_event(ev: dict) -> bool:
                 INSERT OR IGNORE INTO {table}
                     (titre, description, adresse, lat, lng,
                      date_debut, date_fin, duree_jours, categorie, prix,
-                     source, url, image_url, scraped_at, identified_date)
+                     source, url, image_url, scraped_at, identified_date,
+                     location_region)
                 VALUES
                     (:titre, :description, :adresse, :lat, :lng,
                      :date_debut, :date_fin, :duree_jours, :categorie, :prix,
-                     :source, :url, :image_url, :scraped_at, :identified_date)
+                     :source, :url, :image_url, :scraped_at, :identified_date,
+                     :location_region)
             """, ev)
             conn.commit()
             return cur.rowcount == 1
