@@ -982,11 +982,11 @@
     transition: background 0.15s, border-color 0.15s, color 0.15s;
   }
   #cat-filter-tout.active {
-    background: var(--green);
-    border-color: var(--green);
+    background: var(--gold);
+    border-color: var(--gold);
     color: var(--ink);
   }
-  #cat-filter-sep {
+  .cat-filter-sep {
     height: 1px;
     background: rgba(255,255,255,0.1);
   }
@@ -1013,8 +1013,8 @@
     gap: 5px;
   }
   .cat-filter-chip.selected {
-    background: var(--green);
-    border-color: var(--green);
+    background: var(--gold);
+    border-color: var(--gold);
     color: #0F1117;
     font-weight: 600;
   }
@@ -1195,8 +1195,9 @@
   </button>
   <div id="cat-filter-panel">
     <button id="cat-filter-tout">Tout</button>
-    <div id="cat-filter-sep"></div>
+    <div class="cat-filter-sep"></div>
     <div id="cat-filter-chips"></div>
+    <div class="cat-filter-sep"></div>
     <button id="cat-filter-apply">Appliquer</button>
   </div>
   <div id="sidebar-header">
@@ -2287,9 +2288,18 @@ ALL_CATS.forEach(({ cat, emoji, label }) => {
   chip.className = 'cat-filter-chip';
   chip.dataset.cat = cat;
   chip.innerHTML = `${emoji} ${label}`;
-  chip.addEventListener('click', () => chip.classList.toggle('selected'));
+  chip.addEventListener('click', () => {
+    chip.classList.toggle('selected');
+    _syncToutState();
+  });
   chipsContainer.appendChild(chip);
 });
+
+function _syncToutState() {
+  const all   = document.querySelectorAll('.cat-filter-chip');
+  const sel   = document.querySelectorAll('.cat-filter-chip.selected');
+  document.getElementById('cat-filter-tout').classList.toggle('active', sel.length === all.length && all.length > 0);
+}
 
 function _applyCategories() {
   const selected = new Set(
@@ -2312,7 +2322,6 @@ function _applyCategories() {
   });
 
   document.getElementById('cat-filter-btn').classList.toggle('active', selected.size > 0);
-  document.getElementById('cat-filter-tout').classList.toggle('active', selected.size === 0);
   _closeCatPanel();
   if (currentLat !== null) searchEvents();
   else searchEventsBrowse();
@@ -2340,10 +2349,11 @@ map.on('drag',  _closeCatPanel);
 document.getElementById('cat-filter-apply').addEventListener('click', _applyCategories);
 
 const toutBtn = document.getElementById('cat-filter-tout');
-toutBtn.classList.add('active');
 toutBtn.addEventListener('click', () => {
-  document.querySelectorAll('.cat-filter-chip.selected').forEach(c => c.classList.remove('selected'));
-  _applyCategories();
+  const allChips = document.querySelectorAll('.cat-filter-chip');
+  const allSelected = [...allChips].every(c => c.classList.contains('selected'));
+  allChips.forEach(c => allSelected ? c.classList.remove('selected') : c.classList.add('selected'));
+  _syncToutState();
 });
 
 catPanel.addEventListener('click', e => e.stopPropagation());
