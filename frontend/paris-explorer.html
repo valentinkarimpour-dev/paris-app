@@ -1191,7 +1191,8 @@
     <svg viewBox="0 0 18 18"><line x1="3" y1="9" x2="15" y2="9"/><line x1="3" y1="4" x2="15" y2="4"/><line x1="3" y1="14" x2="15" y2="14"/></svg>
   </button>
   <button id="cat-filter-btn" title="Filtrer par catégorie">
-    <span style="font-size:18px; font-weight:700; color:var(--cream)">#</span>
+    <img src="img/hashtag.png" alt="Catégories"
+         style="width:22px;height:22px;object-fit:contain;filter:brightness(0) invert(1);">
   </button>
   <div id="cat-filter-panel">
     <button id="cat-filter-tout">Tout</button>
@@ -2004,9 +2005,20 @@ async function searchEvents() {
   updateCatCounts(filtered);
 
   filtered.sort((a, b) => {
-    const aFin = a.date_fin || '9999-99-99';
-    const bFin = b.date_fin || '9999-99-99';
-    if (aFin !== bFin) return aFin < bFin ? -1 : 1;
+    const aDebut = a.date_debut || null;
+    const bDebut = b.date_debut || null;
+    if (aDebut !== bDebut) {
+      if (!aDebut) return 1;
+      if (!bDebut) return -1;
+      return aDebut > bDebut ? -1 : 1;
+    }
+    const aFin = a.date_fin || null;
+    const bFin = b.date_fin || null;
+    if (aFin !== bFin) {
+      if (!aFin) return 1;
+      if (!bFin) return -1;
+      return aFin < bFin ? -1 : 1;
+    }
     return (a.dist ?? Infinity) - (b.dist ?? Infinity);
   });
 
@@ -2081,9 +2093,20 @@ async function searchEventsBrowse() {
       events = events.filter(e => e.source !== 'OpenStreetMap');
     }
     events.sort((a, b) => {
-      const aFin = a.date_fin || '9999-99-99';
-      const bFin = b.date_fin || '9999-99-99';
-      if (aFin !== bFin) return aFin < bFin ? -1 : 1;
+      const aDebut = a.date_debut || null;
+      const bDebut = b.date_debut || null;
+      if (aDebut !== bDebut) {
+        if (!aDebut) return 1;
+        if (!bDebut) return -1;
+        return aDebut > bDebut ? -1 : 1;
+      }
+      const aFin = a.date_fin || null;
+      const bFin = b.date_fin || null;
+      if (aFin !== bFin) {
+        if (!aFin) return 1;
+        if (!bFin) return -1;
+        return aFin < bFin ? -1 : 1;
+      }
       return (a.dist ?? Infinity) - (b.dist ?? Infinity);
     });
     updateCatCounts(events);
@@ -2529,6 +2552,7 @@ document.getElementById('geolocate-btn').addEventListener('click', () => {
   function isMobile() { return window.innerWidth <= 768; }
 
   function openSidebar() {
+    if (window.innerWidth > 768) return;
     sidebar.classList.add('open');
     requestAnimationFrame(() => overlay.classList.add('visible'));
   }
