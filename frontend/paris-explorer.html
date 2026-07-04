@@ -46,10 +46,11 @@
     position: relative;
     z-index: 1000;
     box-shadow: 4px 0 32px rgba(0,0,0,0.4);
-    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1),
+                margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
   }
   #sidebar.collapsed {
-    transform: translateX(calc(-1 * var(--sidebar-w)));
+    margin-left: calc(-1 * var(--sidebar-w));
   }
   #sidebar-overlay {
     display: none;
