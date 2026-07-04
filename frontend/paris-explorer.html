@@ -1852,6 +1852,7 @@ async function refreshColors() {
           const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
           return activeCategories.has(eCat);
         });
+    filtered.forEach((e, i) => { e._id = 'e' + i; });
     renderMarkers(filtered.filter(e => e.lat && e.lng));
     renderEvents(filtered);
   } catch (e) {
@@ -1976,6 +1977,7 @@ async function searchEvents() {
   });
 
   lastAllEvents = all;
+  filtered.forEach((e, i) => { e._id = 'e' + i; });
   renderEvents(filtered);
   renderMarkers(filtered.filter(e => e.lat && e.lng));
 
@@ -2062,6 +2064,7 @@ async function searchEventsBrowse() {
       return (a.dist ?? Infinity) - (b.dist ?? Infinity);
     });
     updateCatCounts(events);
+    events.forEach((e, i) => { e._id = 'e' + i; });
     renderEvents(events);
     renderMarkers(events.filter(e => e.lat && e.lng));
   } catch (err) {
@@ -2117,7 +2120,7 @@ function renderEvents(events) {
     const timingBlock = timingHtml ? `<div class="event-timing">${timingHtml}</div>` : '';
 
     return `
-    <div class="event-card${e.outOfZone ? ' out-of-zone' : ''}" data-id="${e.id}" onclick="focusEvent('${e.id}', ${e.lat ?? 0}, ${e.lng ?? 0})">
+    <div class="event-card${e.outOfZone ? ' out-of-zone' : ''}" data-id="${e._id}" onclick="focusEvent('${e._id}', ${e.lat ?? 0}, ${e.lng ?? 0})">
       <div class="event-header">
         <div class="event-cat" style="color:${catColor}">${getCatEmoji(e.cat)} ${getCatLabel(e.cat)}</div>
         <div class="event-dist">${e.dist != null ? formatDist(e.dist) : '—'}</div>
@@ -2171,8 +2174,8 @@ function renderMarkers(events) {
       ${expoHtml}
     `);
 
-    marker.eventId = String(e.id);
-    marker.on('click', () => highlightCard(String(e.id)));
+    marker.eventId = e._id;
+    marker.on('click', () => highlightCard(e._id));
     eventMarkers.push(marker);
   });
 }
