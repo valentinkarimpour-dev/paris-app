@@ -369,6 +369,27 @@
     background: var(--green);
   }
   #map-cats:empty { display: none; }
+  .cat-more-btn {
+    pointer-events: all;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(15,17,23,0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--stone);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .cat-more-btn:hover { border-color: rgba(255,255,255,0.4); color: var(--cream); }
 
   .cat-btn {
     background: transparent;
@@ -1649,7 +1670,8 @@ function updateCatCounts(allEvents) {
   const catsToShow = activeCategories.size === 0
     ? ALL_CATS
     : ALL_CATS.filter(({ cat }) => activeCategories.has(cat));
-  catsToShow.forEach(({ cat, emoji, label }) => {
+  const MAX_CHIPS = 6;
+  catsToShow.slice(0, MAX_CHIPS).forEach(({ cat, emoji, label }) => {
     const tag = document.createElement('button');
     tag.className = 'cat-btn' + (catSet.has(cat) ? ' active' : '');
     tag.dataset.cat = cat;
@@ -1657,6 +1679,13 @@ function updateCatCounts(allEvents) {
     tag.addEventListener('click', () => _openCatPanel());
     mapCats.appendChild(tag);
   });
+  if (catsToShow.length > MAX_CHIPS) {
+    const more = document.createElement('button');
+    more.className = 'cat-more-btn';
+    more.textContent = `+${catsToShow.length - MAX_CHIPS}`;
+    more.addEventListener('click', () => _openCatPanel());
+    mapCats.appendChild(more);
+  }
 }
 
 const _PARIS_POLY = [
