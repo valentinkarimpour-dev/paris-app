@@ -70,7 +70,7 @@ def _parse_paris_date(dt_str: str | None, is_end_date: bool = False) -> str | No
             result = dt.date()
         else:
             dt_paris = dt.astimezone(_PARIS)
-            if is_end_date and dt_paris.hour == 0 and dt_paris.minute == 0:
+            if is_end_date and dt_paris.hour < 4:
                 dt_paris = dt_paris - timedelta(days=1)
             result = dt_paris.date()
         return result.isoformat()
