@@ -344,13 +344,16 @@
   #map-cats {
     position: absolute;
     top: 16px;
-    left: 16px;
-    right: 90px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: calc(100% - 120px);
     z-index: 998;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
+    justify-content: center;
     pointer-events: none;
   }
   #map-cats .cat-btn {
@@ -964,6 +967,29 @@
   }
   #cat-filter-panel.open { display: flex; }
 
+  #cat-filter-tout {
+    width: 100%;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    color: var(--stone);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  #cat-filter-tout.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--ink);
+  }
+  #cat-filter-sep {
+    height: 1px;
+    background: rgba(255,255,255,0.1);
+  }
   #cat-filter-chips {
     display: flex;
     flex-wrap: wrap;
@@ -1168,6 +1194,8 @@
     <span style="font-size:18px; font-weight:700; color:var(--cream)">#</span>
   </button>
   <div id="cat-filter-panel">
+    <button id="cat-filter-tout">Tout</button>
+    <div id="cat-filter-sep"></div>
     <div id="cat-filter-chips"></div>
     <button id="cat-filter-apply">Appliquer</button>
   </div>
@@ -2284,6 +2312,7 @@ function _applyCategories() {
   });
 
   document.getElementById('cat-filter-btn').classList.toggle('active', selected.size > 0);
+  document.getElementById('cat-filter-tout').classList.toggle('active', selected.size === 0);
   _closeCatPanel();
   if (currentLat !== null) searchEvents();
   else searchEventsBrowse();
@@ -2309,6 +2338,14 @@ catFilterBtn.addEventListener('click', e => {
 map.on('click', _closeCatPanel);
 map.on('drag',  _closeCatPanel);
 document.getElementById('cat-filter-apply').addEventListener('click', _applyCategories);
+
+const toutBtn = document.getElementById('cat-filter-tout');
+toutBtn.classList.add('active');
+toutBtn.addEventListener('click', () => {
+  document.querySelectorAll('.cat-filter-chip.selected').forEach(c => c.classList.remove('selected'));
+  _applyCategories();
+});
+
 catPanel.addEventListener('click', e => e.stopPropagation());
 
 // ══════════════════════════════════════════
