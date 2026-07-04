@@ -1533,9 +1533,9 @@ function applyPeriodFilter(events) {
 
   if (periodMode === 'recent') {
     const daysVal = parseInt(document.getElementById('period-days-val').value) || 7;
-    const unitVal = document.getElementById('period-days-unit').value || 'day';
-    const mult = unitVal === 'day'   ? 1
-               : unitVal === 'week'  ? 7
+    const unitVal = document.getElementById('period-days-unit').value || '1';
+    const mult = unitVal === '1'  ? 1
+               : unitVal === '7'  ? 7
                : 30; // month
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - daysVal * mult);
@@ -1559,10 +1559,10 @@ function updatePeriodBanner() {
     banner.classList.add('visible');
   } else if (periodMode === 'recent') {
     const val  = document.getElementById('period-days-val').value  || '7';
-    const unit = document.getElementById('period-days-unit').value || 'day';
-    const unitLabel = unit === 'day'
+    const unit = document.getElementById('period-days-unit').value || '1';
+    const unitLabel = unit === '1'
       ? (val === '1' ? 'jour' : 'jours')
-      : unit === 'week'
+      : unit === '7'
         ? (val === '1' ? 'semaine' : 'semaines')
         : (val === '1' ? 'mois' : 'mois');
     banner.textContent = `Événements ayant débuté il y a moins de ${val} ${unitLabel}`;
