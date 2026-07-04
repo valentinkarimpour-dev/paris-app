@@ -366,6 +366,7 @@
   #map-cats .cat-btn.active {
     background: var(--green);
   }
+  #map-cats:empty { display: none; }
 
   .cat-btn {
     background: transparent;
@@ -856,8 +857,8 @@
     top: 20px;
     right: 20px;
     z-index: 999;
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
     background: var(--ink);
     border: 2px solid rgba(255,255,255,0.15);
     border-radius: 50%;
@@ -898,8 +899,8 @@
     top: 20px;
     right: 82px;
     z-index: 999;
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
     background: var(--ink);
     border: 2px solid rgba(255,255,255,0.15);
     border-radius: 50%;
@@ -922,6 +923,88 @@
   #pegman-btn.pinned {
     border-color: var(--green);
     box-shadow: 0 4px 24px var(--green-glow), 0 0 0 3px rgba(0,246,111,0.2);
+  }
+
+  #cat-filter-btn {
+    position: absolute;
+    top: 120px;
+    right: 16px;
+    z-index: 999;
+    width: 44px;
+    height: 44px;
+    background: var(--ink);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    transition: border-color 0.2s;
+  }
+  #cat-filter-btn:hover,
+  #cat-filter-btn.active { border-color: var(--green); }
+
+  #cat-filter-panel {
+    position: absolute;
+    top: 70px;
+    right: 68px;
+    z-index: 998;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 16px;
+    width: 280px;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  #cat-filter-panel.open { display: flex; }
+
+  #cat-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .cat-filter-chip {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--stone);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .cat-filter-chip.selected {
+    background: var(--green);
+    border-color: var(--green);
+    color: #0F1117;
+    font-weight: 600;
+  }
+
+  #cat-filter-apply {
+    width: 100%;
+    background: var(--green);
+    border: none;
+    color: #0F1117;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
   }
 
   /* ── LEAFLET CUSTOM ── */
@@ -1178,23 +1261,7 @@
 <div id="map-container">
   <div id="map"></div>
   <div id="hors-paris-warning">📍 Hors de Paris</div>
-  <div id="map-cats">
-    <button class="cat-btn active" data-cat="all" data-label="Tout">Tout</button>
-    <button class="cat-btn" data-cat="musique" data-label="🎵 Musique">🎵 Musique</button>
-    <button class="cat-btn" data-cat="exposition" data-label="🖼 Expo">🖼 Expo</button>
-    <button class="cat-btn" data-cat="vide-grenier" data-label="🪑 Vide-grenier">🪑 Vide-grenier</button>
-    <button class="cat-btn" data-cat="spectacle" data-label="🎭 Spectacle">🎭 Spectacle</button>
-    <button class="cat-btn" data-cat="atelier" data-label="🎨 Atelier">🎨 Atelier</button>
-    <button class="cat-btn" data-cat="restaurant" data-label="🍽 Restaurant">🍽 Restaurant</button>
-    <button class="cat-btn" data-cat="brocante" data-label="🪑 Brocante">🪑 Brocante</button>
-    <button class="cat-btn" data-cat="sport" data-label="🏃 Sport">🏃 Sport</button>
-    <button class="cat-btn" data-cat="cafe" data-label="☕ Café">☕ Café</button>
-    <button class="cat-btn" data-cat="bar" data-label="🍺 Bar">🍺 Bar</button>
-    <button class="cat-btn" data-cat="cinema" data-label="🎬 Cinéma">🎬 Cinéma</button>
-    <button class="cat-btn" data-cat="musee" data-label="🏛 Musée">🏛 Musée</button>
-    <button class="cat-btn" data-cat="popup" data-label="🛍 Popup">🛍 Popup</button>
-    <button class="cat-btn" data-cat="autre" data-label="📌 Autre">📌 Autre</button>
-  </div>
+  <div id="map-cats"></div>
   <div id="backend-warning" style="display:none; position:absolute; bottom:40px; left:50%; transform:translateX(-50%); z-index:999; font-size:11px; color:var(--gold); background:rgba(15,17,23,0.8); padding:6px 14px; border-radius:20px; white-space:nowrap;">
     ⚠️ Événements dynamiques indisponibles
   </div>
@@ -1210,6 +1277,13 @@
     <img src="img/tour-eiffel.jpg" alt="Vue Paris" style="width:36px;height:36px;object-fit:contain;">
   </button>
   <button id="geolocate-btn" title="Ma position">📍</button>
+  <button id="cat-filter-btn" title="Filtrer par catégorie">
+    <span style="font-size:18px; font-weight:700; color:var(--cream)">#</span>
+  </button>
+  <div id="cat-filter-panel">
+    <div id="cat-filter-chips"></div>
+    <button id="cat-filter-apply">Appliquer</button>
+  </div>
   <div id="pegman-btn" draggable="true" title="Glisse-moi sur la carte">🚶</div>
   <div id="drop-pegman" style="
     position: absolute;
@@ -1339,7 +1413,7 @@ let eventMarkers   = [];
 let currentLat     = null;
 let currentLng     = null;
 let currentRadius  = 500;
-let activeCategory = '';
+let activeCategories = new Set();
 let periodMode     = 'nouveaux';
 let museumExposMap  = {};
 let museumEverParsedSet = new Set();
@@ -1788,11 +1862,11 @@ async function refreshColors() {
       [...museumEverParsedSet].sort().join(',') !== prevMuseumParsed;
     if (!changed) return;
     museumExposMap = newMuseumExpos;
-    const filtered = activeCategory === 'all'
+    const filtered = activeCategories.size === 0
       ? lastAllEvents
       : lastAllEvents.filter(e => {
           const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
-          return eCat === activeCategory;
+          return activeCategories.has(eCat);
         });
     renderMarkers(filtered.filter(e => e.lat && e.lng));
     renderEvents(filtered);
@@ -1836,9 +1910,9 @@ async function searchEvents() {
   if (radiusCircle && radiusCircle._path) radiusCircle._path.classList.add('pulsing');
   await fadeOutMarkers();
 
-  const fetchOverpass = !activeCategory || activeCategory === 'all' || OVERPASS_CATS.has(activeCategory);
-  const fetchBackend  = !activeCategory || activeCategory === 'all' || BACKEND_CATS.has(activeCategory) || (activeCategory || '').startsWith('autre');
-  const fetchMusee    = !activeCategory || activeCategory === 'all' || activeCategory === 'musee';
+  const fetchOverpass = activeCategories.size === 0 || [...activeCategories].some(c => OVERPASS_CATS.has(c));
+  const fetchBackend  = activeCategories.size === 0 || [...activeCategories].some(c => BACKEND_CATS.has(c) || c.startsWith('autre'));
+  const fetchMusee    = activeCategories.size === 0 || activeCategories.has('musee');
 
   const [overpassResult, backendResult, museeResult] = await Promise.allSettled([
     fetchOverpass ? fetchPOI(currentLat, currentLng, currentRadius) : Promise.resolve([]),
@@ -1878,8 +1952,8 @@ async function searchEvents() {
 
   // ── Filtre permanents (musées, cinémas OSM) ──
   const showingPermanents = showPermanents
-    || activeCategory === 'musee'
-    || activeCategory === 'cinema'
+    || activeCategories.has('musee')
+    || activeCategories.has('cinema')
     || periodMode === 'all';
   if (!showingPermanents) {
     for (let i = all.length - 1; i >= 0; i--) {
@@ -1888,11 +1962,11 @@ async function searchEvents() {
   }
 
   // Filtre catégorie
-  let filtered = (!activeCategory || activeCategory === 'all')
+  let filtered = activeCategories.size === 0
     ? all
     : all.filter(e => {
         const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
-        return eCat === activeCategory;
+        return activeCategories.has(eCat);
       });
 
   // Filtre période (frontend)
@@ -1921,17 +1995,17 @@ async function searchEventsBrowse() {
   const PARIS_LAT = 48.8566, PARIS_LNG = 2.3522;
   try {
     const showingPermanents = showPermanents
-      || activeCategory === 'musee'
-      || activeCategory === 'cinema'
+      || activeCategories.has('musee')
+      || activeCategories.has('cinema')
       || periodMode === 'all';
 
     const params = new URLSearchParams({
       lat: PARIS_LAT, lng: PARIS_LNG, radius: 5000, days: getApiDays()
     });
-    if (activeCategory && activeCategory !== 'all') params.set('cat', activeCategory);
+    if (activeCategories.size === 1) params.set('cat', [...activeCategories][0]);
 
     const fetchOverpass = showingPermanents
-      && (!activeCategory || activeCategory === 'all' || OVERPASS_CATS.has(activeCategory));
+      && (activeCategories.size === 0 || [...activeCategories].some(c => OVERPASS_CATS.has(c)));
 
     const [resp, poisResult] = await Promise.all([
       fetch(`${API_BASE}/events?${params}`),
@@ -1968,6 +2042,12 @@ async function searchEventsBrowse() {
     }
 
     events = applyPeriodFilter(events);
+    if (activeCategories.size > 1) {
+      events = events.filter(e => {
+        const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
+        return activeCategories.has(eCat);
+      });
+    }
     if (!showingPermanents) {
       events = events.filter(e => e.source !== 'OpenStreetMap');
     }
@@ -2150,37 +2230,86 @@ mapSlider.addEventListener('input', e => {
 });
 
 // ══════════════════════════════════════════
-// CATEGORY FILTERS
+// CATEGORY FILTER PANEL
 // ══════════════════════════════════════════
-document.querySelectorAll('.cat-btn').forEach(btn => {
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (btn.style.opacity === '0.4') return;
-    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeCategory = btn.dataset.cat;
-    if (window.innerWidth > 768) {
-      if (currentLat !== null) searchEvents();
-      else searchEventsBrowse();
-    }
-    document.querySelectorAll('.mob-cat-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.cat === activeCategory);
-    });
-  });
+const ALL_CATS = [
+  { cat: 'musique',      emoji: '🎵', label: 'Musique' },
+  { cat: 'exposition',   emoji: '🖼', label: 'Expo' },
+  { cat: 'restaurant',   emoji: '🍽', label: 'Restaurant' },
+  { cat: 'bar',          emoji: '🍺', label: 'Bar' },
+  { cat: 'cafe',         emoji: '☕', label: 'Café' },
+  { cat: 'rooftop',      emoji: '🌇', label: 'Rooftop' },
+  { cat: 'popup',        emoji: '🛍', label: 'Pop-up' },
+  { cat: 'boutique',     emoji: '🏪', label: 'Boutique' },
+  { cat: 'wellness',     emoji: '🧘', label: 'Wellness' },
+  { cat: 'spectacle',    emoji: '🎭', label: 'Spectacle' },
+  { cat: 'cinema',       emoji: '🎬', label: 'Cinéma' },
+  { cat: 'musee',        emoji: '🏛', label: 'Musée' },
+  { cat: 'marche',       emoji: '🛒', label: 'Marché' },
+  { cat: 'brocante',     emoji: '🪑', label: 'Brocante' },
+  { cat: 'vide-grenier', emoji: '🪑', label: 'Vide-grenier' },
+  { cat: 'sport',        emoji: '🏃', label: 'Sport' },
+  { cat: 'atelier',      emoji: '🎨', label: 'Atelier' },
+  { cat: 'autre',        emoji: '📌', label: 'Autre' },
+];
+
+const chipsContainer = document.getElementById('cat-filter-chips');
+ALL_CATS.forEach(({ cat, emoji, label }) => {
+  const chip = document.createElement('button');
+  chip.className = 'cat-filter-chip';
+  chip.dataset.cat = cat;
+  chip.innerHTML = `${emoji} ${label}`;
+  chip.addEventListener('click', () => chip.classList.toggle('selected'));
+  chipsContainer.appendChild(chip);
 });
 
-// ── CATEGORY FILTERS MOBILE ──
-document.querySelectorAll('.mob-cat-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.mob-cat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeCategory = btn.dataset.cat;
-    document.querySelectorAll('.cat-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.cat === activeCategory);
-    });
-    // Pas de recherche immédiate sur mobile
+function _applyCategories() {
+  const selected = new Set(
+    [...document.querySelectorAll('.cat-filter-chip.selected')].map(c => c.dataset.cat)
+  );
+  activeCategories = selected;
+
+  const mapCats = document.getElementById('map-cats');
+  mapCats.innerHTML = '';
+  selected.forEach(cat => {
+    const info = ALL_CATS.find(c => c.cat === cat);
+    if (!info) return;
+    const tag = document.createElement('button');
+    tag.className = 'cat-btn active';
+    tag.dataset.cat = cat;
+    tag.dataset.label = `${info.emoji} ${info.label}`;
+    tag.innerHTML = `${info.emoji} ${info.label}`;
+    tag.addEventListener('click', () => _openCatPanel());
+    mapCats.appendChild(tag);
   });
+
+  document.getElementById('cat-filter-btn').classList.toggle('active', selected.size > 0);
+  _closeCatPanel();
+  if (currentLat !== null) searchEvents();
+  else searchEventsBrowse();
+}
+
+const catPanel     = document.getElementById('cat-filter-panel');
+const catFilterBtn = document.getElementById('cat-filter-btn');
+
+function _openCatPanel() {
+  catPanel.classList.add('open');
+  catFilterBtn.classList.add('active');
+}
+function _closeCatPanel() {
+  catPanel.classList.remove('open');
+  if (activeCategories.size === 0) catFilterBtn.classList.remove('active');
+}
+
+catFilterBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  catPanel.classList.contains('open') ? _closeCatPanel() : _openCatPanel();
 });
+
+map.on('click', _closeCatPanel);
+map.on('drag',  _closeCatPanel);
+document.getElementById('cat-filter-apply').addEventListener('click', _applyCategories);
+catPanel.addEventListener('click', e => e.stopPropagation());
 
 // ══════════════════════════════════════════
 // PERIOD FILTER — dropdown popover
