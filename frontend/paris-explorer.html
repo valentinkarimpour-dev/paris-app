@@ -927,9 +927,9 @@
 
   #cat-filter-btn {
     position: absolute;
-    top: 120px;
-    right: 16px;
-    z-index: 999;
+    top: 76px;
+    right: -52px;
+    z-index: 1001;
     width: 44px;
     height: 44px;
     background: var(--ink);
@@ -947,9 +947,9 @@
 
   #cat-filter-panel {
     position: absolute;
-    top: 70px;
-    right: 68px;
-    z-index: 998;
+    top: 76px;
+    left: calc(100% + 8px);
+    z-index: 1000;
     background: rgba(15,17,23,0.95);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -1164,6 +1164,13 @@
   <button id="sidebar-toggle" aria-label="Masquer le menu">
     <svg viewBox="0 0 18 18"><line x1="3" y1="9" x2="15" y2="9"/><line x1="3" y1="4" x2="15" y2="4"/><line x1="3" y1="14" x2="15" y2="14"/></svg>
   </button>
+  <button id="cat-filter-btn" title="Filtrer par catégorie">
+    <span style="font-size:18px; font-weight:700; color:var(--cream)">#</span>
+  </button>
+  <div id="cat-filter-panel">
+    <div id="cat-filter-chips"></div>
+    <button id="cat-filter-apply">Appliquer</button>
+  </div>
   <div id="sidebar-header">
     <div class="logo">Flân<em>eur</em></div>
     <div class="tagline">Paris · Ce qui s'ouvre, ce qui se passe</div>
@@ -1277,13 +1284,6 @@
     <img src="img/tour-eiffel.jpg" alt="Vue Paris" style="width:36px;height:36px;object-fit:contain;">
   </button>
   <button id="geolocate-btn" title="Ma position">📍</button>
-  <button id="cat-filter-btn" title="Filtrer par catégorie">
-    <span style="font-size:18px; font-weight:700; color:var(--cream)">#</span>
-  </button>
-  <div id="cat-filter-panel">
-    <div id="cat-filter-chips"></div>
-    <button id="cat-filter-apply">Appliquer</button>
-  </div>
   <div id="pegman-btn" draggable="true" title="Glisse-moi sur la carte">🚶</div>
   <div id="drop-pegman" style="
     position: absolute;
