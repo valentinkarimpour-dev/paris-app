@@ -794,6 +794,32 @@
 
   #map-hint.hidden { opacity: 0; }
 
+  #period-info-banner {
+    position: absolute;
+    bottom: 52px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 997;
+    background: rgba(15,17,23,0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 8px 20px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--stone);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #period-info-banner.visible { opacity: 1; }
+  @media (max-width: 768px) {
+    #period-info-banner { bottom: 130px; }
+  }
+
   /* ── BUTTONS DROITE CARTE ── */
   #geolocate-btn {
     position: absolute;
@@ -1237,6 +1263,7 @@
     <img src="img/tour-eiffel.jpg" alt="Vue Paris" style="width:36px;height:36px;object-fit:contain;">
   </button>
   <button id="geolocate-btn" title="Ma position">📍</button>
+  <div id="period-info-banner"></div>
 </div>
 
 <div id="period-popover" class="hidden">
@@ -1256,9 +1283,6 @@
         <option value="30">mois</option>
       </select>
     </span>
-  </div>
-  <div class="period-option" data-mode="all">
-    Tous les événements
   </div>
 </div>
 
@@ -1528,7 +1552,48 @@ function applyPeriodFilter(events) {
     });
   }
 
+  if (periodMode === 'recent') {
+    const daysVal = parseInt(document.getElementById('period-days-val').value) || 7;
+    const unitVal = document.getElementById('period-days-unit').value || 'day';
+    const mult = unitVal === 'day'   ? 1
+               : unitVal === 'week'  ? 7
+               : 30; // month
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - daysVal * mult);
+    const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`;
+    return events.filter(e => {
+      if (!e.date_debut) return false;
+      return e.date_debut >= cutoffStr;
+    });
+  }
+
   return events;
+}
+
+function updatePeriodBanner() {
+  const banner = document.getElementById('period-info-banner');
+  if (!banner) return;
+  const d = new Date();
+  const todayFr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  if (periodMode === 'nouveaux') {
+    banner.textContent = `Événements ayant débuté aujourd'hui (${todayFr})`;
+    banner.classList.add('visible');
+  } else if (periodMode === 'recent') {
+    const val  = document.getElementById('period-days-val').value  || '7';
+    const unit = document.getElementById('period-days-unit').value || 'day';
+    const unitLabel = unit === 'day'
+      ? (val === '1' ? 'jour' : 'jours')
+      : unit === 'week'
+        ? (val === '1' ? 'semaine' : 'semaines')
+        : (val === '1' ? 'mois' : 'mois');
+    banner.textContent = `Événements ayant débuté il y a moins de ${val} ${unitLabel}`;
+    banner.classList.add('visible');
+  } else if (periodMode === 'current') {
+    banner.textContent = 'Événements actuellement en cours';
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
 }
 
 function isNew(identifiedDate) {
@@ -1895,8 +1960,7 @@ async function searchEvents() {
   // ── Filtre permanents (musées, cinémas OSM) ──
   const showingPermanents = showPermanents
     || activeCategories.has('musee')
-    || activeCategories.has('cinema')
-    || periodMode === 'all';
+    || activeCategories.has('cinema');
   if (!showingPermanents) {
     for (let i = all.length - 1; i >= 0; i--) {
       if (all[i].source === 'OpenStreetMap') all.splice(i, 1);
@@ -1949,8 +2013,7 @@ async function searchEventsBrowse() {
   try {
     const showingPermanents = showPermanents
       || activeCategories.has('musee')
-      || activeCategories.has('cinema')
-      || periodMode === 'all';
+      || activeCategories.has('cinema');
 
     const params = new URLSearchParams({
       lat: PARIS_LAT, lng: PARIS_LNG, radius: 5000, days: getApiDays()
@@ -2324,8 +2387,9 @@ document.querySelectorAll('.period-option').forEach(opt => {
     document.querySelectorAll('.period-option').forEach(o => o.classList.remove('active'));
     opt.classList.add('active');
     periodMode = opt.dataset.mode;
-    const labels = { nouveaux: 'Ouverts aujourd\'hui', current: 'En cours', recent: 'Récents', all: 'Tous' };
+    const labels = { nouveaux: 'Ouverts aujourd\'hui', current: 'En cours', recent: 'Récents' };
     periodLabel.textContent = labels[periodMode];
+    updatePeriodBanner();
 
     // Si le clic vient de l'input ou du select, garder le popover ouvert
     if (e.target.closest('.period-inline')) return;
@@ -2340,6 +2404,7 @@ document.querySelectorAll('.period-option').forEach(opt => {
 
 document.getElementById('period-days-val').addEventListener('change', () => {
   periodMode = 'recent';
+  updatePeriodBanner();
   periodPopover.classList.add('hidden');
   if (window.innerWidth > 768) {
     if (currentLat) searchEvents();
@@ -2348,6 +2413,7 @@ document.getElementById('period-days-val').addEventListener('change', () => {
 });
 document.getElementById('period-days-unit').addEventListener('change', () => {
   periodMode = 'recent';
+  updatePeriodBanner();
   periodPopover.classList.add('hidden');
   if (window.innerWidth > 768) {
     if (currentLat) searchEvents();
@@ -2437,6 +2503,7 @@ document.getElementById('geolocate-btn').addEventListener('click', () => {
 
 // Chargement initial — tous les événements Nouveaux sur Paris
 searchEventsBrowse();
+updatePeriodBanner();
 </script>
 </body>
 </html>
