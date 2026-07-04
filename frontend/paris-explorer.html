@@ -2117,7 +2117,7 @@ function renderEvents(events) {
     const timingBlock = timingHtml ? `<div class="event-timing">${timingHtml}</div>` : '';
 
     return `
-    <div class="event-card${e.outOfZone ? ' out-of-zone' : ''}" data-id="${e.id}" onclick="focusEvent('${e.id}', ${e.lat ?? 0}, ${e.lng ?? 0})">
+    <div class="event-card${e.outOfZone ? ' out-of-zone' : ''}" data-id="${e.id}" onclick="focusEvent('${e.id}')">
       <div class="event-header">
         <div class="event-cat" style="color:${catColor}">${getCatEmoji(e.cat)} ${getCatLabel(e.cat)}</div>
         <div class="event-dist">${e.dist != null ? formatDist(e.dist) : '—'}</div>
@@ -2180,10 +2180,12 @@ function renderMarkers(events) {
 // ══════════════════════════════════════════
 // FOCUS / HIGHLIGHT
 // ══════════════════════════════════════════
-function focusEvent(id, lat, lng) {
-  map.panTo([lat, lng], { animate: true, duration: 0.5 });
+function focusEvent(id) {
   const m = eventMarkers.find(m => m.eventId === id);
-  if (m) m.openPopup();
+  if (m) {
+    map.panTo(m.getLatLng(), { animate: true, duration: 0.5 });
+    m.openPopup();
+  }
   highlightCard(id);
 }
 
