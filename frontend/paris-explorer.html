@@ -1361,6 +1361,7 @@ let currentLat     = null;
 let currentLng     = null;
 let currentRadius  = 500;
 let activeCategories = new Set();
+let currentMapCats   = new Set();
 let periodMode     = 'nouveaux';
 let museumExposMap  = {};
 let museumEverParsedSet = new Set();
@@ -1636,21 +1637,22 @@ function showSkeletons() {
 // CAT COUNTS
 // ══════════════════════════════════════════
 function updateCatCounts(allEvents) {
-  const counts = {};
+  const catSet = new Set();
   allEvents.forEach(e => {
     const cat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
-    counts[cat] = (counts[cat] || 0) + 1;
+    if (cat) catSet.add(cat);
   });
-  document.querySelectorAll('.cat-btn').forEach(btn => {
-    const cat   = btn.dataset.cat;
-    const label = btn.dataset.label || '';
-    if (cat === 'all') {
-      btn.textContent = allEvents.length > 0 ? `${label} ${allEvents.length}` : label;
-    } else {
-      const count = counts[cat] || 0;
-      btn.textContent = count > 0 ? `${label} ${count}` : label;
-      btn.style.opacity = count > 0 ? '1' : '0.4';
-    }
+  currentMapCats = catSet;
+
+  const mapCats = document.getElementById('map-cats');
+  mapCats.innerHTML = '';
+  ALL_CATS.filter(({ cat }) => catSet.has(cat)).forEach(({ cat, emoji, label }) => {
+    const tag = document.createElement('button');
+    tag.className = 'cat-btn' + (activeCategories.has(cat) ? ' active' : '');
+    tag.dataset.cat = cat;
+    tag.innerHTML = `${emoji} ${label}`;
+    tag.addEventListener('click', () => _openCatPanel());
+    mapCats.appendChild(tag);
   });
 }
 
@@ -2284,21 +2286,6 @@ function _applyCategories() {
     [...document.querySelectorAll('.cat-filter-chip.selected')].map(c => c.dataset.cat)
   );
   activeCategories = selected;
-
-  const mapCats = document.getElementById('map-cats');
-  mapCats.innerHTML = '';
-  selected.forEach(cat => {
-    const info = ALL_CATS.find(c => c.cat === cat);
-    if (!info) return;
-    const tag = document.createElement('button');
-    tag.className = 'cat-btn active';
-    tag.dataset.cat = cat;
-    tag.dataset.label = `${info.emoji} ${info.label}`;
-    tag.innerHTML = `${info.emoji} ${info.label}`;
-    tag.addEventListener('click', () => _openCatPanel());
-    mapCats.appendChild(tag);
-  });
-
   document.getElementById('cat-filter-btn').classList.toggle('active', selected.size > 0);
   _closeCatPanel();
   if (currentLat !== null) searchEvents();
@@ -2309,6 +2296,12 @@ const catPanel     = document.getElementById('cat-filter-panel');
 const catFilterBtn = document.getElementById('cat-filter-btn');
 
 function _openCatPanel() {
+  if (activeCategories.size === 0) {
+    document.querySelectorAll('.cat-filter-chip').forEach(chip => {
+      chip.classList.toggle('selected', currentMapCats.has(chip.dataset.cat));
+    });
+    _syncToutState();
+  }
   catPanel.classList.add('open');
   catFilterBtn.classList.add('active');
 }
