@@ -119,12 +119,11 @@
     #map-cats { display: none; }
     #mobile-cats { display: block !important; }
     #apply-filters-wrap { display: block !important; }
-    #pegman-btn, #eiffel-btn, #geolocate-btn {
+    #eiffel-btn, #geolocate-btn {
       width: 44px;
       height: 44px;
       font-size: 20px;
     }
-    #pegman-btn { top: 16px; right: 16px; }
     #eiffel-btn { top: 16px; right: 68px; }
     #geolocate-btn { top: 68px; right: 16px; }
     #map-radius-control {
@@ -773,14 +772,6 @@
   }
   #hors-paris-warning.visible { opacity: 1; }
 
-  @keyframes pegmanFall {
-    0%   { transform: translateY(-50px) rotate(-15deg); opacity: 0.9; }
-    55%  { transform: translateY(4px)   rotate(6deg);  opacity: 1;   }
-    75%  { transform: translateY(-10px) rotate(-3deg); }
-    90%  { transform: translateY(2px)   rotate(1deg);  }
-    100% { transform: translateY(0)     rotate(0deg);  opacity: 0;   }
-  }
-
   /* ── MAP OVERLAY UI ── */
   #map-hint {
     position: absolute;
@@ -803,27 +794,7 @@
 
   #map-hint.hidden { opacity: 0; }
 
-  #drop-target-hint {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--green);
-    color: #0F1117;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 8px 18px;
-    border-radius: 20px;
-    z-index: 999;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-    letter-spacing: 0.5px;
-  }
-
-  #drop-target-hint.visible { opacity: 1; }
-
-  /* ── PEGMAN ── */
+  /* ── BUTTONS DROITE CARTE ── */
   #geolocate-btn {
     position: absolute;
     top: 20px;
@@ -855,49 +826,6 @@
     to   { transform: rotate(360deg); }
   }
 
-  #pegman-btn {
-    display: none !important;
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 999;
-    width: 44px;
-    height: 44px;
-    background: var(--ink);
-    border: 2px solid rgba(255,255,255,0.15);
-    border-radius: 50%;
-    cursor: grab;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 26px;
-    transition: all 0.2s;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    user-select: none;
-  }
-
-  #pegman-btn:hover {
-    border-color: var(--green);
-    transform: scale(1.05);
-    box-shadow: 0 4px 24px var(--green-glow);
-  }
-
-  #pegman-btn.dragging {
-    cursor: grabbing;
-    animation: pegmanPulse 0.7s ease-in-out infinite;
-  }
-  @keyframes pegmanPulse {
-    0%, 100% {
-      transform: scale(1);
-      border-color: rgba(255,255,255,0.15);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    }
-    50% {
-      transform: scale(1.18);
-      border-color: var(--green);
-      box-shadow: 0 4px 24px var(--green-glow), 0 0 0 6px rgba(0,246,111,0.15);
-    }
-  }
   #eiffel-btn {
     position: absolute;
     top: 76px;
@@ -924,11 +852,6 @@
     border-color: var(--green);
     box-shadow: 0 4px 24px var(--green-glow);
   }
-  #pegman-btn.pinned {
-    border-color: var(--green);
-    box-shadow: 0 4px 24px var(--green-glow), 0 0 0 3px rgba(0,246,111,0.2);
-  }
-
   #cat-filter-btn {
     position: absolute;
     top: 76px;
@@ -1309,21 +1232,11 @@
            min="200" max="2000" step="100" value="500">
   </div>
   <div id="loading"><span class="loader-text dot-anim">Chargement</span></div>
-  <div id="map-hint">Glisse le 🚶 sur la carte · Ajuste le rayon avec le slider</div>
-  <div id="drop-target-hint">Lâche ici pour explorer ce quartier</div>
+  <div id="map-hint">Clique sur la carte · Ajuste le rayon avec le slider</div>
   <button id="eiffel-btn" class="active" title="Vue Paris">
     <img src="img/tour-eiffel.jpg" alt="Vue Paris" style="width:36px;height:36px;object-fit:contain;">
   </button>
   <button id="geolocate-btn" title="Ma position">📍</button>
-  <div id="pegman-btn" draggable="true" title="Glisse-moi sur la carte" style="display:none">🚶</div>
-  <div id="drop-pegman" style="
-    position: absolute;
-    pointer-events: none;
-    z-index: 1001;
-    font-size: 28px;
-    display: none;
-    transform-origin: top center;
-  ">🚶</div>
 </div>
 
 <div id="period-popover" class="hidden">
@@ -1722,7 +1635,6 @@ function isInsideParis(lat, lng) {
 // ══════════════════════════════════════════
 function placePin(lat, lng) {
   document.getElementById('eiffel-btn').classList.remove('active');
-  document.getElementById('pegman-btn').classList.add('pinned');
   const _warning = document.getElementById('hors-paris-warning');
   if (!isInsideParis(lat, lng)) {
     _warning.classList.add('visible');
@@ -1767,7 +1679,6 @@ function resetToBrowse() {
   currentLat = null;
   currentLng = null;
   document.getElementById('eiffel-btn').classList.add('active');
-  document.getElementById('pegman-btn').classList.remove('pinned');
   mapRadiusControl.classList.remove('visible');
   document.getElementById('map-hint').classList.remove('hidden');
   searchEventsBrowse();
@@ -2467,59 +2378,8 @@ document.getElementById('eiffel-btn').addEventListener('click', () => {
   resetToBrowse();
 });
 
-// ══════════════════════════════════════════
-// PEGMAN DRAG & DROP
-// ══════════════════════════════════════════
-const pegman       = document.getElementById('pegman-btn');
-const mapContainer = document.getElementById('map-container');
-const dropHint     = document.getElementById('drop-target-hint');
-
-pegman.addEventListener('dragstart', e => {
-  pegman.classList.add('dragging');
-  dropHint.classList.add('visible');
-  e.dataTransfer.setData('text/plain', 'pegman');
-});
-
-pegman.addEventListener('dragend', () => {
-  pegman.classList.remove('dragging');
-  dropHint.classList.remove('visible');
-});
-
-mapContainer.addEventListener('dragover', e => e.preventDefault());
-
-mapContainer.addEventListener('drop', e => {
-  e.preventDefault();
-  dropHint.classList.remove('visible');
-  const rect   = mapContainer.getBoundingClientRect();
-  const latlng = map.containerPointToLatLng([e.clientX - rect.left, e.clientY - rect.top]);
-  map.setView([latlng.lat, latlng.lng], Math.max(map.getZoom(), 15), { animate: true });
-  const pt  = map.latLngToContainerPoint(latlng);
-  const el  = document.getElementById('drop-pegman');
-  el.style.left    = (pt.x - 14) + 'px';
-  el.style.top     = (pt.y - 50) + 'px';
-  el.style.display = 'block';
-  el.style.animation = 'none';
-  void el.offsetHeight;
-  el.style.animation = 'pegmanFall 0.5s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
-  setTimeout(() => {
-    el.style.display = 'none';
-    placePin(latlng.lat, latlng.lng);
-  }, 420);
-});
-
 map.on('click', e => {
-  const pt  = map.latLngToContainerPoint(e.latlng);
-  const el  = document.getElementById('drop-pegman');
-  el.style.left    = (pt.x - 14) + 'px';
-  el.style.top     = (pt.y - 50) + 'px';
-  el.style.display = 'block';
-  el.style.animation = 'none';
-  void el.offsetHeight;
-  el.style.animation = 'pegmanFall 0.5s cubic-bezier(0.25,0.46,0.45,0.94) forwards';
-  setTimeout(() => {
-    el.style.display = 'none';
-    placePin(e.latlng.lat, e.latlng.lng);
-  }, 420);
+  placePin(e.latlng.lat, e.latlng.lng);
 });
 
 document.getElementById('geolocate-btn').addEventListener('click', () => {
