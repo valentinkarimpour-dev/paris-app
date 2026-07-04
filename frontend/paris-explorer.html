@@ -856,7 +856,7 @@
   }
 
   #pegman-btn {
-    display: none;
+    display: none !important;
     position: absolute;
     top: 20px;
     right: 20px;
@@ -1315,7 +1315,7 @@
     <img src="img/tour-eiffel.jpg" alt="Vue Paris" style="width:36px;height:36px;object-fit:contain;">
   </button>
   <button id="geolocate-btn" title="Ma position">📍</button>
-  <div id="pegman-btn" draggable="true" title="Glisse-moi sur la carte">🚶</div>
+  <div id="pegman-btn" draggable="true" title="Glisse-moi sur la carte" style="display:none">🚶</div>
   <div id="drop-pegman" style="
     position: absolute;
     pointer-events: none;
