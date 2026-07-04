@@ -1941,9 +1941,7 @@ async function searchEvents() {
   }
 
   // ── Filtre permanents (musées, cinémas OSM) ──
-  const showingPermanents = showPermanents
-    || activeCategories.has('musee')
-    || activeCategories.has('cinema');
+  const showingPermanents = showPermanents;
   if (!showingPermanents) {
     for (let i = all.length - 1; i >= 0; i--) {
       if (all[i].source === 'OpenStreetMap') all.splice(i, 1);
@@ -1995,9 +1993,7 @@ async function searchEventsBrowse() {
   await fadeOutMarkers();
   const PARIS_LAT = 48.8566, PARIS_LNG = 2.3522;
   try {
-    const showingPermanents = showPermanents
-      || activeCategories.has('musee')
-      || activeCategories.has('cinema');
+    const showingPermanents = showPermanents;
 
     const params = new URLSearchParams({
       lat: PARIS_LAT, lng: PARIS_LNG, radius: 5000, days: getApiDays()
