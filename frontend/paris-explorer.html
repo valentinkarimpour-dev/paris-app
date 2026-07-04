@@ -1646,9 +1646,12 @@ function updateCatCounts(allEvents) {
 
   const mapCats = document.getElementById('map-cats');
   mapCats.innerHTML = '';
-  ALL_CATS.filter(({ cat }) => catSet.has(cat)).forEach(({ cat, emoji, label }) => {
+  const catsToShow = activeCategories.size === 0
+    ? ALL_CATS
+    : ALL_CATS.filter(({ cat }) => activeCategories.has(cat));
+  catsToShow.forEach(({ cat, emoji, label }) => {
     const tag = document.createElement('button');
-    tag.className = 'cat-btn' + (activeCategories.has(cat) ? ' active' : '');
+    tag.className = 'cat-btn' + (catSet.has(cat) ? ' active' : '');
     tag.dataset.cat = cat;
     tag.innerHTML = `${emoji} ${label}`;
     tag.addEventListener('click', () => _openCatPanel());
