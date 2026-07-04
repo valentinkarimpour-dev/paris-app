@@ -2365,12 +2365,7 @@ document.getElementById('geolocate-btn').addEventListener('click', () => {
     if (isMobile()) {
       sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
     } else {
-      const isCollapsed = sidebar.classList.contains('collapsed');
       sidebar.classList.toggle('collapsed');
-      const icon = isCollapsed
-        ? '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
-        : '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
-      toggleBtn.querySelector('svg').innerHTML = icon;
       setTimeout(() => map.invalidateSize(), 320);
     }
   });
