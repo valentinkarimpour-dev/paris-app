@@ -1667,9 +1667,10 @@ function updateCatCounts(allEvents) {
 
   const mapCats = document.getElementById('map-cats');
   mapCats.innerHTML = '';
-  const catsToShow = activeCategories.size === 0
+  const catsToShow = (activeCategories.size === 0
     ? ALL_CATS
-    : ALL_CATS.filter(({ cat }) => activeCategories.has(cat));
+    : ALL_CATS.filter(({ cat }) => activeCategories.has(cat))
+  ).slice().sort((a, b) => (catSet.has(b.cat) ? 1 : 0) - (catSet.has(a.cat) ? 1 : 0));
   const MAX_CHIPS = 6;
   catsToShow.slice(0, MAX_CHIPS).forEach(({ cat, emoji, label }) => {
     const tag = document.createElement('button');
