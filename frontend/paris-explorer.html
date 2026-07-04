@@ -773,27 +773,6 @@
   #hors-paris-warning.visible { opacity: 1; }
 
   /* ── MAP OVERLAY UI ── */
-  #map-hint {
-    position: absolute;
-    bottom: 32px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--ink);
-    color: var(--cream);
-    font-size: 12px;
-    padding: 10px 20px;
-    border-radius: 24px;
-    letter-spacing: 0.5px;
-    z-index: 999;
-    pointer-events: none;
-    opacity: 1;
-    transition: opacity 0.6s;
-    border: 1px solid rgba(255,255,255,0.1);
-    white-space: nowrap;
-  }
-
-  #map-hint.hidden { opacity: 0; }
-
   #period-info-banner {
     position: absolute;
     bottom: 52px;
@@ -809,7 +788,7 @@
     font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 12px;
     font-weight: 500;
-    color: var(--stone);
+    color: #ffffff;
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
@@ -1258,7 +1237,7 @@
            min="200" max="2000" step="100" value="500">
   </div>
   <div id="loading"><span class="loader-text dot-anim">Chargement</span></div>
-  <div id="map-hint">Clique sur la carte · Ajuste le rayon avec le slider</div>
+
   <button id="eiffel-btn" class="active" title="Vue Paris">
     <img src="img/tour-eiffel.jpg" alt="Vue Paris" style="width:36px;height:36px;object-fit:contain;">
   </button>
@@ -1729,7 +1708,6 @@ function placePin(lat, lng) {
   }).catch(() => {});
   setTimeout(() => refreshColors(), 10000);
 
-  document.getElementById('map-hint').classList.add('hidden');
   if (typeof openSidebarIfMobile === 'function') openSidebarIfMobile();
   if (window.innerWidth <= 768) {
     mapRadiusControl.classList.add('visible');
@@ -1745,7 +1723,6 @@ function resetToBrowse() {
   currentLng = null;
   document.getElementById('eiffel-btn').classList.add('active');
   mapRadiusControl.classList.remove('visible');
-  document.getElementById('map-hint').classList.remove('hidden');
   searchEventsBrowse();
 }
 
