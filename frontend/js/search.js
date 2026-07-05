@@ -12,9 +12,15 @@ import { renderEvents } from './render.js';
 // Proxy local — évite un import depuis app.js (orchestrateur, pas un module de logique)
 function openCatPanel() {
   const p = document.getElementById('cat-filter-panel');
-  if (p) p.classList.add('open');
   const b = document.getElementById('cat-filter-btn');
-  if (b) b.classList.add('active');
+  if (!p) return;
+  if (p.classList.contains('open')) {
+    p.classList.remove('open');
+    if (state.activeCategories.size === 0 && b) b.classList.remove('active');
+  } else {
+    p.classList.add('open');
+    if (b) b.classList.add('active');
+  }
 }
 
 // ══════════════════════════════════════════
