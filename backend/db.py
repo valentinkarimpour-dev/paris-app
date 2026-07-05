@@ -27,6 +27,7 @@ _SOURCE_TABLES = [
     "lebonbon_food",
     "lebonbon_drinks",
     "lebonbon_healthy",
+    "lebonbon_loisirs",
     "parismusee_expos",
     "secrets_of_paris",
     "numero_popup",

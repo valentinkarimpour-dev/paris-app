@@ -1,7 +1,7 @@
 export const API_BASE = 'http://145.241.168.3:8000';
 
 export const OVERPASS_CATS = new Set(['cinema', 'musee']);
-export const BACKEND_CATS  = new Set(['musique', 'exposition', 'vide-grenier', 'spectacle', 'atelier', 'restaurant', 'cafe', 'bar', 'brocante', 'sport', 'popup', 'boutique', 'rooftop', 'marche', 'autre']);
+export const BACKEND_CATS  = new Set(['musique', 'exposition', 'vide-grenier', 'spectacle', 'atelier', 'restaurant', 'cafe', 'bar', 'brocante', 'sport', 'popup', 'boutique', 'rooftop', 'marche', 'loisirs', 'autre']);
 
 export const CAT_COLORS = {
   cinema:         '#E8503E',
@@ -20,6 +20,7 @@ export const CAT_COLORS = {
   boutique:       '#B07EC8',
   rooftop:        '#5BAFBF',
   marche:         '#7EB5A6',
+  loisirs:        '#4CAF50',
   autre:          '#888888',
 };
 
@@ -40,6 +41,7 @@ export const CAT_EMOJI = {
   boutique:       '🛍',
   rooftop:        '🌇',
   marche:         '🚶',
+  loisirs:        '🎡',
   autre:          '📌',
 };
 
@@ -48,6 +50,7 @@ export const SOURCE_LABELS = {
   'lebonbon_drinks':  'LeBonbon',
   'lebonbon_news':    'LeBonbon',
   'lebonbon_healthy': 'LeBonbon',
+  'lebonbon_loisirs': 'LeBonbon',
   'sortiraparis':     'Sortir à Paris',
   'sortiraparis_restaurant': 'SortirAParis Restos',
   'sortiraparis_cafes':      'SortirAParis Cafés',
@@ -86,6 +89,7 @@ export const ALL_CATS = [
   { cat: 'vide-grenier', emoji: '🪑', label: 'Vide-grenier' },
   { cat: 'sport',        emoji: '🏃', label: 'Sport' },
   { cat: 'atelier',      emoji: '🎨', label: 'Atelier' },
+  { cat: 'loisirs',      emoji: '🎡', label: 'Loisirs' },
   { cat: 'autre',        emoji: '📌', label: 'Autre' },
 ];
 

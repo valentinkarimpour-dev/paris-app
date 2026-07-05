@@ -102,7 +102,7 @@ Champs attendus :
     null si durée inconnue ou événement permanent.
 - categorie    : une seule valeur parmi :
     restaurant, bar, exposition, musee, galerie, cafe, brocante, vide-grenier, popup, wellness, rooftop,
-    musique, marche, cinema, spectacle, sport, atelier, boutique
+    musique, marche, cinema, spectacle, sport, atelier, boutique, loisirs
     Si aucune ne convient, réponds "autre: [ta suggestion en minuscules]" (ex: "autre: festival")
 
 IMPORTANT : si l'article décrit un lieu permanent (restaurant, bar, café, galerie), date_fin doit être null même si une date d'ouverture est mentionnée.
@@ -165,7 +165,7 @@ Chaque élément du tableau doit avoir :
     null si l'événement est permanent ou si la durée est inconnue.
 - categorie    : une valeur parmi :
     restaurant, bar, exposition, musee, galerie, cafe, brocante, vide-grenier, popup, wellness, rooftop,
-    musique, marche, cinema, spectacle, sport, atelier, boutique
+    musique, marche, cinema, spectacle, sport, atelier, boutique, loisirs
     Si aucune ne convient, réponds "autre: [ta suggestion en minuscules]" (ex: "autre: festival")
 
 IMPORTANT : sois concis dans les descriptions (1 phrase max) pour permettre d'extraire tous les items sans troncature.
@@ -203,7 +203,7 @@ def extract_venue_llm(title: str, description: str = "") -> tuple[str, str]:
         return "", ""
     prompt = (
         "Extrait le nom du lieu/établissement et sa catégorie depuis ce texte.\n"
-        "Catégories possibles : restaurant, bar, exposition, musee, galerie, cafe, brocante, vide-grenier, popup, wellness, rooftop, musique, marche, cinema, spectacle, sport, atelier, boutique, autre\n"
+        "Catégories possibles : restaurant, bar, exposition, musee, galerie, cafe, brocante, vide-grenier, popup, wellness, rooftop, musique, marche, cinema, spectacle, sport, atelier, boutique, loisirs, autre\n"
         "Réponds UNIQUEMENT en JSON : {\"nom\": \"...\", \"categorie\": \"...\"}\n\n"
         f"Titre: {title}\n"
         f"Description: {description[:300]}"
@@ -226,6 +226,7 @@ VALID_CATEGORIES: frozenset[str] = frozenset({
     "restaurant", "bar", "exposition", "musee", "galerie", "cafe",
     "brocante", "vide-grenier", "popup", "wellness", "rooftop",
     "musique", "marche", "cinema", "spectacle", "sport", "atelier", "boutique",
+    "loisirs",
 })
 
 VALID_CATS = VALID_CATEGORIES  # rétrocompat
