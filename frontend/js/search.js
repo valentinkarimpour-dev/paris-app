@@ -20,7 +20,7 @@ function openCatPanel() {
 // ══════════════════════════════════════════
 // REFRESH COLORS
 // ══════════════════════════════════════════
-export async function refreshColors() {
+export async function refreshColors(onMarkerClick) {
   if (state.currentLat === null || !state.lastAllEvents.length) return;
   try {
     const prevMuseumParsed = [...state.museumEverParsedSet].sort().join(',');
@@ -40,7 +40,7 @@ export async function refreshColors() {
           return state.activeCategories.has(eCat);
         });
     filtered.forEach((e, i) => { e._id = 'e' + i; });
-    renderMarkers(filtered.filter(e => e.lat && e.lng));
+    renderMarkers(filtered.filter(e => e.lat && e.lng), onMarkerClick);
     renderEvents(filtered);
   } catch (e) {
     console.warn('[refreshColors]', e);
@@ -50,7 +50,7 @@ export async function refreshColors() {
 // ══════════════════════════════════════════
 // SEARCH
 // ══════════════════════════════════════════
-export async function searchEvents() {
+export async function searchEvents(onMarkerClick) {
   if (state.currentLat === null) return;
 
   const loading = document.getElementById('loading');
@@ -148,13 +148,13 @@ export async function searchEvents() {
   state.lastAllEvents = all;
   filtered.forEach((e, i) => { e._id = 'e' + i; });
   renderEvents(filtered);
-  renderMarkers(filtered.filter(e => e.lat && e.lng));
+  renderMarkers(filtered.filter(e => e.lat && e.lng), onMarkerClick);
 
   loading.classList.remove('visible');
   if (state.radiusCircle && state.radiusCircle._path) state.radiusCircle._path.classList.remove('pulsing');
 }
 
-export async function searchEventsBrowse() {
+export async function searchEventsBrowse(onMarkerClick) {
   showSkeletons();
   await fadeOutMarkers();
   const PARIS_LAT = 48.8566, PARIS_LNG = 2.3522;
@@ -233,7 +233,7 @@ export async function searchEventsBrowse() {
     updateCatCounts(events, openCatPanel);
     events.forEach((e, i) => { e._id = 'e' + i; });
     renderEvents(events);
-    renderMarkers(events.filter(e => e.lat && e.lng));
+    renderMarkers(events.filter(e => e.lat && e.lng), onMarkerClick);
   } catch (err) {
     console.warn('[searchEventsBrowse]', err);
   }

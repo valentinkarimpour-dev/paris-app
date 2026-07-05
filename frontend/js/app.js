@@ -4,7 +4,7 @@ import { state } from './state.js';
 import { fetchSuggestions } from './api.js';
 import { initMap, makePinIcon, updateCircle, isInsideParis } from './map.js';
 import { updatePeriodBanner } from './filters.js';
-import { focusEvent, renderSuggestions } from './render.js';
+import { highlightCard, renderSuggestions } from './render.js';
 import { searchEvents, searchEventsBrowse, refreshColors } from './search.js';
 
 // ═══════════════════════════════════════════════════════════
@@ -19,8 +19,27 @@ import { searchEvents, searchEventsBrowse, refreshColors } from './search.js';
 
 initMap();
 
-// Fonction appelée depuis des onclick inline — doit rester globale
-window.focusEvent = focusEvent;
+// ══════════════════════════════════════════
+// SELECT EVENT — sidebar card, marker, ou onclick inline
+// ══════════════════════════════════════════
+function selectEvent(eventId, { pan = true } = {}) {
+  state.selectedEventId = eventId;
+  highlightCard(eventId);
+
+  const marker = state.eventMarkers.find(m => m.eventId === eventId);
+  if (pan && marker) {
+    state.map.panTo(marker.getLatLng(), { animate: true, duration: 0.5 });
+  }
+  if (marker) {
+    marker.openPopup();
+  }
+}
+
+const onMarkerClick = (id) => selectEvent(id, { pan: false });
+
+// Fonctions appelées depuis des onclick inline — doivent rester globales
+window.focusEvent = (id) => selectEvent(id, { pan: true });
+window.selectEvent = selectEvent;
 
 // ══════════════════════════════════════════
 // SEARCH BAR — api-adresse.data.gouv.fr
@@ -80,17 +99,17 @@ function placePin(lat, lng) {
     state.currentLat = p.lat; state.currentLng = p.lng;
     updateCircle(p.lat, p.lng);
   });
-  state.pinMarker.on('dragend', () => searchEvents());
+  state.pinMarker.on('dragend', () => searchEvents(onMarkerClick));
 
   updateCircle(lat, lng);
-  searchEvents();
+  searchEvents(onMarkerClick);
 
   fetch(`${API_BASE}/museum-events/scrape`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ lat, lng, radius: state.currentRadius }),
   }).catch(() => {});
-  setTimeout(() => refreshColors(), 10000);
+  setTimeout(() => refreshColors(onMarkerClick), 10000);
 
   if (typeof openSidebarIfMobile === 'function') openSidebarIfMobile();
   if (window.innerWidth <= 768) {
@@ -107,7 +126,7 @@ function resetToBrowse() {
   state.currentLng = null;
   document.getElementById('eiffel-btn').classList.add('active');
   mapRadiusControl.classList.remove('visible');
-  searchEventsBrowse();
+  searchEventsBrowse(onMarkerClick);
 }
 
 // ══════════════════════════════════════════
@@ -127,7 +146,7 @@ document.getElementById('radius-slider').addEventListener('input', e => {
     updateCircle(state.currentLat, state.currentLng);
     if (window.innerWidth > 768) {
       clearTimeout(sliderDebounce);
-      sliderDebounce = setTimeout(() => searchEvents(), 400);
+      sliderDebounce = setTimeout(() => searchEvents(onMarkerClick), 400);
     }
   }
 });
@@ -142,7 +161,7 @@ mapSlider.addEventListener('input', e => {
     updateCircle(state.currentLat, state.currentLng);
     if (window.innerWidth > 768) {
       clearTimeout(sliderDebounce);
-      sliderDebounce = setTimeout(() => searchEvents(), 400);
+      sliderDebounce = setTimeout(() => searchEvents(onMarkerClick), 400);
     }
   }
 });
@@ -177,8 +196,8 @@ function _applyCategories() {
   state.activeCategories = selected;
   document.getElementById('cat-filter-btn').classList.toggle('active', selected.size > 0);
   _closeCatPanel();
-  if (state.currentLat !== null) searchEvents();
-  else searchEventsBrowse();
+  if (state.currentLat !== null) searchEvents(onMarkerClick);
+  else searchEventsBrowse(onMarkerClick);
 }
 
 const catPanel     = document.getElementById('cat-filter-panel');
@@ -258,8 +277,8 @@ document.querySelectorAll('.period-option').forEach(opt => {
 
     periodPopover.classList.add('hidden');
     if (window.innerWidth > 768) {
-      if (state.currentLat !== null) searchEvents();
-      else searchEventsBrowse();
+      if (state.currentLat !== null) searchEvents(onMarkerClick);
+      else searchEventsBrowse(onMarkerClick);
     }
   });
 });
@@ -269,8 +288,8 @@ document.getElementById('period-days-val').addEventListener('change', () => {
   updatePeriodBanner();
   periodPopover.classList.add('hidden');
   if (window.innerWidth > 768) {
-    if (state.currentLat) searchEvents();
-    else searchEventsBrowse();
+    if (state.currentLat) searchEvents(onMarkerClick);
+    else searchEventsBrowse(onMarkerClick);
   }
 });
 document.getElementById('period-days-unit').addEventListener('change', () => {
@@ -278,8 +297,8 @@ document.getElementById('period-days-unit').addEventListener('change', () => {
   updatePeriodBanner();
   periodPopover.classList.add('hidden');
   if (window.innerWidth > 768) {
-    if (state.currentLat) searchEvents();
-    else searchEventsBrowse();
+    if (state.currentLat) searchEvents(onMarkerClick);
+    else searchEventsBrowse(onMarkerClick);
   }
 });
 
@@ -289,13 +308,13 @@ document.getElementById('period-days-unit').addEventListener('change', () => {
 document.getElementById('show-all-btn').addEventListener('click', () => {
   state.showPermanents = !state.showPermanents;
   document.getElementById('show-all-btn').classList.toggle('active', state.showPermanents);
-  if (state.currentLat !== null) searchEvents();
-  else searchEventsBrowse();
+  if (state.currentLat !== null) searchEvents(onMarkerClick);
+  else searchEventsBrowse(onMarkerClick);
 });
 
 document.getElementById('apply-filters-btn').addEventListener('click', () => {
-  if (state.currentLat !== null) searchEvents();
-  else searchEventsBrowse();
+  if (state.currentLat !== null) searchEvents(onMarkerClick);
+  else searchEventsBrowse(onMarkerClick);
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('sidebar-overlay').classList.remove('visible');
@@ -364,5 +383,5 @@ document.getElementById('geolocate-btn').addEventListener('click', () => {
 })();
 
 // Chargement initial — tous les événements Nouveaux sur Paris
-searchEventsBrowse();
+searchEventsBrowse(onMarkerClick);
 updatePeriodBanner();

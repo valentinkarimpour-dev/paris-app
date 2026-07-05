@@ -100,15 +100,8 @@ export function renderSuggestions(features, onSelect) {
 }
 
 // ══════════════════════════════════════════
-// FOCUS / HIGHLIGHT
+// HIGHLIGHT
 // ══════════════════════════════════════════
-export function focusEvent(id, lat, lng) {
-  state.map.panTo([lat, lng], { animate: true, duration: 0.5 });
-  const m = state.eventMarkers.find(m => m.eventId === id);
-  if (m) m.openPopup();
-  highlightCard(id);
-}
-
 export function highlightCard(id) {
   document.querySelectorAll('.event-card').forEach(c => c.classList.remove('highlighted'));
   const card = document.querySelector(`.event-card[data-id="${id}"]`);

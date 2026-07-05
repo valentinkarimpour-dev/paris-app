@@ -4,7 +4,6 @@ import {
   getCatColor, getCatEmoji, getCatLabel,
   normalizeName, formatDist, formatSource, toProper, getMuseumColor
 } from './utils.js';
-import { highlightCard } from './render.js';
 
 // ══════════════════════════════════════════
 // MAP INIT — CartoDB Voyager
@@ -109,7 +108,7 @@ export async function fadeOutMarkers() {
 // ══════════════════════════════════════════
 // RENDER MAP MARKERS (staggered bounce)
 // ══════════════════════════════════════════
-export function renderMarkers(events) {
+export function renderMarkers(events, onMarkerClick) {
   state.eventMarkers.forEach(m => state.map.removeLayer(m));
   state.eventMarkers = [];
 
@@ -144,7 +143,7 @@ export function renderMarkers(events) {
     `);
 
     marker.eventId = e._id;
-    marker.on('click', () => highlightCard(e._id));
+    marker.on('click', () => { if (onMarkerClick) onMarkerClick(e._id); });
     state.eventMarkers.push(marker);
   });
 }

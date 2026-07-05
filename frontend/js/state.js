@@ -13,4 +13,5 @@ export const state = {
   museumEverParsedSet: new Set(),
   lastAllEvents:       [],
   showPermanents:      false,
+  selectedEventId:     null,
 };
