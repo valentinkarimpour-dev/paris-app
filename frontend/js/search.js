@@ -145,6 +145,9 @@ export async function searchEvents(onMarkerClick) {
     return (a.dist ?? Infinity) - (b.dist ?? Infinity);
   });
 
+  state.events         = all;
+  state.filteredEvents = filtered;
+
   state.lastAllEvents = all;
   filtered.forEach((e, i) => { e._id = 'e' + i; });
   renderEvents(filtered);
@@ -203,6 +206,8 @@ export async function searchEventsBrowse(onMarkerClick) {
       events.push(e);
     }
 
+    const all = events;
+
     events = applyPeriodFilter(events);
     if (state.activeCategories.size > 1) {
       events = events.filter(e => {
@@ -230,6 +235,10 @@ export async function searchEventsBrowse(onMarkerClick) {
       }
       return (a.dist ?? Infinity) - (b.dist ?? Infinity);
     });
+
+    state.events         = all;
+    state.filteredEvents = events;
+
     updateCatCounts(events, openCatPanel);
     events.forEach((e, i) => { e._id = 'e' + i; });
     renderEvents(events);

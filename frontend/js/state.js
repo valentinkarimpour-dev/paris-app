@@ -14,4 +14,6 @@ export const state = {
   lastAllEvents:       [],
   showPermanents:      false,
   selectedEventId:     null,
+  events:              [],   // tous les events fetched (avant filtrage)
+  filteredEvents:      [],   // events après applyPeriodFilter et filtre catégories
 };
