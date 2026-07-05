@@ -1,3 +1,14 @@
+import {
+  API_BASE, OVERPASS_CATS, BACKEND_CATS,
+  CAT_COLORS, CAT_EMOJI, SOURCE_LABELS, ALL_CATS, _PARIS_POLY
+} from './config.js';
+
+import {
+  getCatColor, getCatEmoji, getCatLabel,
+  normalizeName, haversine, formatDist, toProper,
+  formatSource, isNew, freshnessWidth
+} from './utils.js';
+
 // ══════════════════════════════════════════
 // MAP INIT — CartoDB Voyager
 // ══════════════════════════════════════════
@@ -100,70 +111,6 @@ let museumEverParsedSet = new Set();
 let lastAllEvents   = [];
 let showPermanents  = false;
 
-// ══════════════════════════════════════════
-// CAT CONFIG
-// ══════════════════════════════════════════
-const CAT_COLORS = {
-  cinema:         '#E8503E',
-  musee:          '#C9A84C',
-  musique:        '#E8503E',
-  exposition:     '#9B7EC8',
-  spectacle:      '#D4825A',
-  atelier:        '#5BAFBF',
-  restaurant:     '#D4825A',
-  cafe:           '#A0784A',
-  bar:            '#C9784A',
-  brocante:       '#7EB5A6',
-  'vide-grenier': '#7EB5A6',
-  sport:          '#4CAF50',
-  popup:          '#E8A03E',
-  boutique:       '#B07EC8',
-  rooftop:        '#5BAFBF',
-  marche:         '#7EB5A6',
-  autre:          '#888888',
-};
-
-const CAT_EMOJI = {
-  cinema:         '🎬',
-  musee:          '🏛',
-  musique:        '🎵',
-  exposition:     '🖼',
-  spectacle:      '🎭',
-  atelier:        '🎨',
-  restaurant:     '🍽',
-  cafe:           '☕',
-  bar:            '🍺',
-  brocante:       '🪑',
-  'vide-grenier': '🪑',
-  sport:          '🏃',
-  popup:          '🛍',
-  boutique:       '🛍',
-  rooftop:        '🌇',
-  marche:         '🚶',
-  autre:          '📌',
-};
-
-const API_BASE      = 'http://145.241.168.3:8000';
-const OVERPASS_CATS = new Set(['cinema', 'musee']);
-const BACKEND_CATS  = new Set(['musique', 'exposition', 'vide-grenier', 'spectacle', 'atelier', 'restaurant', 'cafe', 'bar', 'brocante', 'sport', 'popup', 'boutique', 'rooftop', 'marche', 'autre']);
-
-function getCatColor(cat) {
-  if (!cat) return '#888';
-  if (cat.startsWith('autre')) return CAT_COLORS['autre'];
-  return CAT_COLORS[cat] || '#888';
-}
-
-function getCatEmoji(cat) {
-  if (!cat) return '📌';
-  if (cat.startsWith('autre')) return CAT_EMOJI['autre'];
-  return CAT_EMOJI[cat] || '📌';
-}
-
-function getCatLabel(cat) {
-  if (!cat) return 'AUTRE';
-  if (cat.startsWith('autre')) return 'AUTRE';
-  return cat.toUpperCase();
-}
 
 function getMuseumColor(normTitle) {
   const hasExpo = Object.entries(museumExposMap).some(([k]) => normalizeName(k) === normTitle);
@@ -172,65 +119,6 @@ function getMuseumColor(normTitle) {
   return '#5C6470';
 }
 
-// ══════════════════════════════════════════
-// UTILS
-// ══════════════════════════════════════════
-function normalizeName(s) {
-  return s.toLowerCase()
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function haversine(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function formatDist(m) {
-  return m < 1000 ? `${Math.round(m)}m` : `${(m/1000).toFixed(1)}km`;
-}
-
-function toProper(str) {
-  if (!str) return '';
-  return str
-    .toLowerCase()
-    .replace(/(?:^|\s|[-''])\S/g, c => c.toUpperCase());
-}
-
-const SOURCE_LABELS = {
-  'lebonbon_food':    'LeBonbon',
-  'lebonbon_drinks':  'LeBonbon',
-  'lebonbon_news':    'LeBonbon',
-  'lebonbon_healthy': 'LeBonbon',
-  'sortiraparis':     'Sortir à Paris',
-  'sortiraparis_restaurant': 'SortirAParis Restos',
-  'sortiraparis_cafes':      'SortirAParis Cafés',
-  'sortiraparis_expos':      'SortirAParis Expos',
-  'sortiraparis_popup':      'SortirAParis Popup',
-  'timeout_paris':    'Time Out Paris',
-  'paris_opendata':   'Paris Opendata',
-  'paris_fr':         'Paris.fr',
-  'parisbouge_bars':  'ParisBouge',
-  'parisbouge_restos':'ParisBouge',
-  'parisbouge_expos': 'ParisBouge',
-  'newtable':         'NewTable',
-  'inpi_food':        'INPI',
-  'inpi_drinks':      'INPI',
-  'numero_popup':     'Numéro',
-  'secrets_of_paris': 'Secrets of Paris',
-  'parismusee_expos': 'Paris Musées',
-  'OpenStreetMap':    'OpenStreetMap',
-};
-
-function formatSource(source) {
-  if (!source) return '';
-  return SOURCE_LABELS[source] || source;
-}
 
 function getApiDays() {
   if (periodMode === 'recent') {
@@ -308,18 +196,6 @@ function updatePeriodBanner() {
   }
 }
 
-function isNew(identifiedDate) {
-  if (!identifiedDate) return false;
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 7);
-  return new Date(identifiedDate) >= cutoff;
-}
-
-function freshnessWidth(identifiedDate) {
-  if (!identifiedDate) return 0;
-  const days = (Date.now() - new Date(identifiedDate)) / (1000 * 60 * 60 * 24);
-  return Math.max(0, Math.round(100 - (days / 30) * 100));
-}
 
 // ══════════════════════════════════════════
 // CUSTOM MARKER SVG (staggered bounce)
@@ -400,12 +276,6 @@ function updateCatCounts(allEvents) {
   }
 }
 
-const _PARIS_POLY = [
-  [48.9022, 2.3084],[48.8985, 2.3650],[48.8855, 2.4050],
-  [48.8650, 2.4175],[48.8450, 2.4175],[48.8300, 2.3780],
-  [48.8195, 2.3311],[48.8242, 2.2857],[48.8395, 2.2535],
-  [48.8572, 2.2350],[48.8789, 2.2600],[48.9022, 2.3084],
-];
 
 function isInsideParis(lat, lng) {
   let inside = false;
@@ -981,26 +851,6 @@ mapSlider.addEventListener('input', e => {
 // ══════════════════════════════════════════
 // CATEGORY FILTER PANEL
 // ══════════════════════════════════════════
-const ALL_CATS = [
-  { cat: 'musique',      emoji: '🎵', label: 'Musique' },
-  { cat: 'exposition',   emoji: '🖼', label: 'Expo' },
-  { cat: 'restaurant',   emoji: '🍽', label: 'Restaurant' },
-  { cat: 'bar',          emoji: '🍺', label: 'Bar' },
-  { cat: 'cafe',         emoji: '☕', label: 'Café' },
-  { cat: 'rooftop',      emoji: '🌇', label: 'Rooftop' },
-  { cat: 'popup',        emoji: '🛍', label: 'Pop-up' },
-  { cat: 'boutique',     emoji: '🏪', label: 'Boutique' },
-  { cat: 'wellness',     emoji: '🧘', label: 'Wellness' },
-  { cat: 'spectacle',    emoji: '🎭', label: 'Spectacle' },
-  { cat: 'cinema',       emoji: '🎬', label: 'Cinéma' },
-  { cat: 'musee',        emoji: '🏛', label: 'Musée' },
-  { cat: 'marche',       emoji: '🛒', label: 'Marché' },
-  { cat: 'brocante',     emoji: '🪑', label: 'Brocante' },
-  { cat: 'vide-grenier', emoji: '🪑', label: 'Vide-grenier' },
-  { cat: 'sport',        emoji: '🏃', label: 'Sport' },
-  { cat: 'atelier',      emoji: '🎨', label: 'Atelier' },
-  { cat: 'autre',        emoji: '📌', label: 'Autre' },
-];
 
 const chipsContainer = document.getElementById('cat-filter-chips');
 ALL_CATS.forEach(({ cat, emoji, label }) => {
@@ -1217,3 +1067,6 @@ document.getElementById('geolocate-btn').addEventListener('click', () => {
 // Chargement initial — tous les événements Nouveaux sur Paris
 searchEventsBrowse();
 updatePeriodBanner();
+
+// Fonctions appelées depuis des onclick inline — doivent rester globales
+window.focusEvent = focusEvent;
