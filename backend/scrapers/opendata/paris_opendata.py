@@ -61,7 +61,7 @@ def _map_tags(tags_str: str | None) -> str:
     return _normalize_categorie(tags[0]) if tags else "autre"
 
 
-def _parse_paris_date(dt_str: str | None, is_end_date: bool = False) -> str | None:
+def _parse_paris_date(dt_str: str | None) -> str | None:
     if not dt_str:
         return None
     try:
@@ -70,7 +70,12 @@ def _parse_paris_date(dt_str: str | None, is_end_date: bool = False) -> str | No
             result = dt.date()
         else:
             dt_paris = dt.astimezone(_PARIS)
-            if is_end_date and dt_paris.hour < 4:
+            # L'API Que Faire à Paris borne ses journées à 2h du matin, pas
+            # minuit (une journée va de 02:00:00 à 01:59:59 le lendemain).
+            # Sans ce recalage, un évènement commençant à 00h30 se retrouve
+            # daté du mauvais jour — et pire, une date_fin peut tomber avant
+            # sa date_debut si seule l'une des deux est recalée.
+            if dt_paris.hour < 2:
                 dt_paris = dt_paris - timedelta(days=1)
             result = dt_paris.date()
         return result.isoformat()
@@ -147,8 +152,8 @@ class ParisOpenData(BaseScraper):
                 # Dates
                 date_start = rec.get("date_start", "")
                 date_end   = rec.get("date_end", "")
-                date_debut = _parse_paris_date(date_start, is_end_date=False)
-                date_fin   = _parse_paris_date(date_end,   is_end_date=True)
+                date_debut = _parse_paris_date(date_start)
+                date_fin   = _parse_paris_date(date_end)
 
                 duree_jours = None
                 if date_debut and date_fin:
