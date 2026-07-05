@@ -9,6 +9,13 @@ import {
   formatSource, isNew, freshnessWidth
 } from './utils.js';
 
+import { state } from './state.js';
+import {
+  fetchSuggestions, fetchPOI,
+  fetchBackendEvents, fetchMuseumExpos
+} from './api.js';
+
+
 // ══════════════════════════════════════════
 // MAP INIT — CartoDB Voyager
 // ══════════════════════════════════════════
@@ -39,7 +46,7 @@ addressInput.addEventListener('input', () => {
   searchClear.classList.toggle('hidden', !q);
   clearTimeout(searchDebounce);
   if (q.length < 3) { suggestions.classList.add('hidden'); return; }
-  searchDebounce = setTimeout(() => fetchSuggestions(q), 300);
+  searchDebounce = setTimeout(() => fetchSuggestions(q, renderSuggestions), 300);
 });
 
 searchClear.addEventListener('click', () => {
@@ -53,16 +60,6 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#search-bar')) suggestions.classList.add('hidden');
 });
 
-async function fetchSuggestions(q) {
-  try {
-    const url = `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(q)}&limit=5&lat=48.8566&lon=2.3522`;
-    const res = await fetch(url);
-    const data = await res.json();
-    renderSuggestions(data.features || []);
-  } catch {
-    suggestions.classList.add('hidden');
-  }
-}
 
 function renderSuggestions(features) {
   if (!features.length) { suggestions.classList.add('hidden'); return; }
@@ -94,34 +91,18 @@ function renderSuggestions(features) {
   });
 }
 
-// ══════════════════════════════════════════
-// STATE
-// ══════════════════════════════════════════
-let pinMarker      = null;
-let radiusCircle   = null;
-let eventMarkers   = [];
-let currentLat     = null;
-let currentLng     = null;
-let currentRadius  = 500;
-let activeCategories = new Set();
-let currentMapCats   = new Set();
-let periodMode     = 'nouveaux';
-let museumExposMap  = {};
-let museumEverParsedSet = new Set();
-let lastAllEvents   = [];
-let showPermanents  = false;
 
 
 function getMuseumColor(normTitle) {
-  const hasExpo = Object.entries(museumExposMap).some(([k]) => normalizeName(k) === normTitle);
+  const hasExpo = Object.entries(state.museumExposMap).some(([k]) => normalizeName(k) === normTitle);
   if (hasExpo) return '#4CAF50';
-  if (museumEverParsedSet.has(normTitle)) return getCatColor('musee');
+  if (state.museumEverParsedSet.has(normTitle)) return getCatColor('musee');
   return '#5C6470';
 }
 
 
 function getApiDays() {
-  if (periodMode === 'recent') {
+  if (state.periodMode === 'recent') {
     const val  = parseInt(document.getElementById('period-days-val').value) || 30;
     const mult = parseInt(document.getElementById('period-days-unit').value) || 1;
     return Math.min(val * mult, 365);
@@ -136,14 +117,14 @@ function applyPeriodFilter(events) {
   // Règle absolue tous modes : jamais afficher un event pas encore commencé
   events = events.filter(e => !e.date_debut || e.date_debut <= today);
 
-  if (periodMode === 'nouveaux') {
+  if (state.periodMode === 'nouveaux') {
     return events.filter(e => {
       if (!e.date_debut && !e.date_fin) return true;
       return e.date_debut === today;
     });
   }
 
-  if (periodMode === 'current') {
+  if (state.periodMode === 'current') {
     return events.filter(e => {
       if (!e.date_debut && !e.date_fin) return true;
       if (e.date_debut && e.date_debut > today) return false;
@@ -152,7 +133,7 @@ function applyPeriodFilter(events) {
     });
   }
 
-  if (periodMode === 'recent') {
+  if (state.periodMode === 'recent') {
     const daysVal = parseInt(document.getElementById('period-days-val').value) || 7;
     const unitVal = document.getElementById('period-days-unit').value || '1';
     const mult = unitVal === '1'  ? 1
@@ -175,10 +156,10 @@ function updatePeriodBanner() {
   if (!banner) return;
   const d = new Date();
   const todayFr = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-  if (periodMode === 'nouveaux') {
+  if (state.periodMode === 'nouveaux') {
     banner.textContent = `Événements ayant débuté aujourd'hui (${todayFr})`;
     banner.classList.add('visible');
-  } else if (periodMode === 'recent') {
+  } else if (state.periodMode === 'recent') {
     const val  = document.getElementById('period-days-val').value  || '7';
     const unit = document.getElementById('period-days-unit').value || '1';
     const unitLabel = unit === '1'
@@ -188,7 +169,7 @@ function updatePeriodBanner() {
         : (val === '1' ? 'mois' : 'mois');
     banner.textContent = `Événements ayant débuté il y a moins de ${val} ${unitLabel}`;
     banner.classList.add('visible');
-  } else if (periodMode === 'current') {
+  } else if (state.periodMode === 'current') {
     banner.textContent = 'Événements actuellement en cours';
     banner.classList.add('visible');
   } else {
@@ -250,13 +231,13 @@ function updateCatCounts(allEvents) {
     const cat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
     if (cat) catSet.add(cat);
   });
-  currentMapCats = catSet;
+  state.currentMapCats = catSet;
 
   const mapCats = document.getElementById('map-cats');
   mapCats.innerHTML = '';
-  const catsToShow = (activeCategories.size === 0
+  const catsToShow = (state.activeCategories.size === 0
     ? ALL_CATS
-    : ALL_CATS.filter(({ cat }) => activeCategories.has(cat))
+    : ALL_CATS.filter(({ cat }) => state.activeCategories.has(cat))
   ).slice().sort((a, b) => (catSet.has(b.cat) ? 1 : 0) - (catSet.has(a.cat) ? 1 : 0));
   const MAX_CHIPS = 6;
   catsToShow.slice(0, MAX_CHIPS).forEach(({ cat, emoji, label }) => {
@@ -302,17 +283,17 @@ function placePin(lat, lng) {
   } else {
     _warning.classList.remove('visible');
   }
-  currentLat = lat;
-  currentLng = lng;
+  state.currentLat = lat;
+  state.currentLng = lng;
 
-  if (pinMarker) map.removeLayer(pinMarker);
-  pinMarker = L.marker([lat, lng], { icon: makePinIcon(), draggable: true }).addTo(map);
-  pinMarker.on('drag', e => {
+  if (state.pinMarker) map.removeLayer(state.pinMarker);
+  state.pinMarker = L.marker([lat, lng], { icon: makePinIcon(), draggable: true }).addTo(map);
+  state.pinMarker.on('drag', e => {
     const p = e.target.getLatLng();
-    currentLat = p.lat; currentLng = p.lng;
+    state.currentLat = p.lat; state.currentLng = p.lng;
     updateCircle(p.lat, p.lng);
   });
-  pinMarker.on('dragend', () => searchEvents());
+  state.pinMarker.on('dragend', () => searchEvents());
 
   updateCircle(lat, lng);
   searchEvents();
@@ -320,32 +301,32 @@ function placePin(lat, lng) {
   fetch(`${API_BASE}/museum-events/scrape`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lat, lng, radius: currentRadius }),
+    body: JSON.stringify({ lat, lng, radius: state.currentRadius }),
   }).catch(() => {});
   setTimeout(() => refreshColors(), 10000);
 
   if (typeof openSidebarIfMobile === 'function') openSidebarIfMobile();
   if (window.innerWidth <= 768) {
     mapRadiusControl.classList.add('visible');
-    mapSlider.value = currentRadius;
-    mapLabel.textContent = currentRadius + 'm';
+    mapSlider.value = state.currentRadius;
+    mapLabel.textContent = state.currentRadius + 'm';
   }
 }
 
 function resetToBrowse() {
-  if (pinMarker) { map.removeLayer(pinMarker); pinMarker = null; }
-  if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
-  currentLat = null;
-  currentLng = null;
+  if (state.pinMarker) { map.removeLayer(state.pinMarker); state.pinMarker = null; }
+  if (state.radiusCircle) { map.removeLayer(state.radiusCircle); state.radiusCircle = null; }
+  state.currentLat = null;
+  state.currentLng = null;
   document.getElementById('eiffel-btn').classList.add('active');
   mapRadiusControl.classList.remove('visible');
   searchEventsBrowse();
 }
 
 function updateCircle(lat, lng) {
-  if (radiusCircle) map.removeLayer(radiusCircle);
-  radiusCircle = L.circle([lat, lng], {
-    radius: currentRadius,
+  if (state.radiusCircle) map.removeLayer(state.radiusCircle);
+  state.radiusCircle = L.circle([lat, lng], {
+    radius: state.currentRadius,
     color: 'rgb(0,246,111)',
     fillColor: 'rgb(0,246,111)',
     fillOpacity: 0.06,
@@ -355,118 +336,26 @@ function updateCircle(lat, lng) {
 }
 
 // ══════════════════════════════════════════
-// OVERPASS
-// ══════════════════════════════════════════
-async function fetchPOI(lat, lng, radius) {
-  const r = radius, la = lat, ln = lng;
-  const query = `
-    [out:json][timeout:25];
-    (
-      node["amenity"="cinema"](around:${r},${la},${ln});
-      node["tourism"="museum"](around:${r},${la},${ln});
-      way["amenity"="cinema"](around:${r},${la},${ln});
-      way["tourism"="museum"](around:${r},${la},${ln});
-    );
-    out center;
-  `.trim();
-
-  const resp = await fetch('https://overpass-api.de/api/interpreter', { method: 'POST', body: query });
-  if (!resp.ok) throw new Error(`Overpass HTTP ${resp.status}`);
-  const data = await resp.json();
-
-  return data.elements.map(el => {
-    const tags   = el.tags || {};
-    const poiLat = el.lat ?? el.center?.lat;
-    const poiLng = el.lon ?? el.center?.lon;
-    let cat;
-    if (tags.amenity === 'cinema')      cat = 'cinema';
-    else if (tags.tourism === 'museum') cat = 'musee';
-    else                                cat = 'autre';
-
-    const adresseParts = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean);
-    const adresse = adresseParts.length ? adresseParts.join(' ') : (tags['addr:city'] || '');
-    let prix = '';
-    if (tags.fee === 'no') prix = 'Gratuit'; else if (tags.fee === 'yes') prix = 'Payant';
-    const dist = (poiLat && poiLng) ? Math.round(haversine(lat, lng, poiLat, poiLng)) : null;
-
-    return {
-      id:              'osm_' + el.id,
-      titre:           tags['name:fr'] || tags.name || 'Sans nom',
-      cat,
-      adresse,
-      lat:             poiLat,
-      lng:             poiLng,
-      prix,
-      url:             tags.website || tags['contact:website'] || '',
-      source:          'OpenStreetMap',
-      date:            '',
-      date_debut:      '',
-      date_fin:        '',
-      identified_date: '',
-      dist,
-    };
-  }).filter(e => e.lat && e.lng);
-}
-
-// ══════════════════════════════════════════
-// BACKEND EVENTS
-// ══════════════════════════════════════════
-async function fetchBackendEvents(lat, lng, radius) {
-  const params = new URLSearchParams({ lat, lng, radius, days: getApiDays() });
-  const resp = await fetch(`${API_BASE}/events?${params}`);
-  if (!resp.ok) throw new Error(`Backend HTTP ${resp.status}`);
-  const data = await resp.json();
-  return data.events.map(e => ({
-    id:              'be_' + e.id,
-    titre:           e.titre,
-    cat:             e.categorie || 'autre',
-    adresse:         e.adresse || '',
-    lat:             e.lat,
-    lng:             e.lng,
-    prix:            e.prix || '',
-    url:             e.url || '',
-    source:          e.source,
-    date:            e.date_debut || '',
-    date_debut:      e.date_debut || '',
-    date_fin:        e.date_fin   || '',
-    identified_date: e.identified_date || e.date_debut || '',
-    dist:            e.dist_m,
-  }));
-}
-
-// ══════════════════════════════════════════
-// MUSEUM EXPOS
-// ══════════════════════════════════════════
-async function fetchMuseumExpos(lat, lng, radius) {
-  const params = new URLSearchParams({ lat, lng, radius });
-  const resp = await fetch(`${API_BASE}/museum-events?${params}`);
-  if (!resp.ok) throw new Error(`Backend museum-events HTTP ${resp.status}`);
-  const data = await resp.json();
-  museumEverParsedSet = new Set((data.museums_ever_parsed || []).map(n => normalizeName(n)));
-  return data.museums_with_recent_expos || {};
-}
-
-// ══════════════════════════════════════════
 // REFRESH COLORS
 // ══════════════════════════════════════════
 async function refreshColors() {
-  if (currentLat === null || !lastAllEvents.length) return;
+  if (state.currentLat === null || !state.lastAllEvents.length) return;
   try {
-    const prevMuseumParsed = [...museumEverParsedSet].sort().join(',');
-    const prevMuseumExpos  = JSON.stringify(museumExposMap);
+    const prevMuseumParsed = [...state.museumEverParsedSet].sort().join(',');
+    const prevMuseumExpos  = JSON.stringify(state.museumExposMap);
     const [newMuseumExpos] = await Promise.all([
-      fetchMuseumExpos(currentLat, currentLng, currentRadius),
+      fetchMuseumExpos(state.currentLat, state.currentLng, state.currentRadius),
     ]);
     const changed =
       JSON.stringify(newMuseumExpos) !== prevMuseumExpos ||
-      [...museumEverParsedSet].sort().join(',') !== prevMuseumParsed;
+      [...state.museumEverParsedSet].sort().join(',') !== prevMuseumParsed;
     if (!changed) return;
-    museumExposMap = newMuseumExpos;
-    const filtered = activeCategories.size === 0
-      ? lastAllEvents
-      : lastAllEvents.filter(e => {
+    state.museumExposMap = newMuseumExpos;
+    const filtered = state.activeCategories.size === 0
+      ? state.lastAllEvents
+      : state.lastAllEvents.filter(e => {
           const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
-          return activeCategories.has(eCat);
+          return state.activeCategories.has(eCat);
         });
     filtered.forEach((e, i) => { e._id = 'e' + i; });
     renderMarkers(filtered.filter(e => e.lat && e.lng));
@@ -480,27 +369,27 @@ async function refreshColors() {
 // FADE OUT MARKERS
 // ══════════════════════════════════════════
 async function fadeOutMarkers() {
-  if (!eventMarkers.length) return;
-  eventMarkers.forEach(m => {
+  if (!state.eventMarkers.length) return;
+  state.eventMarkers.forEach(m => {
     if (m._icon) {
       m._icon.style.transition = 'opacity 0.2s';
       m._icon.style.opacity = '0';
     }
   });
   await new Promise(r => setTimeout(r, 200));
-  eventMarkers.forEach(m => map.removeLayer(m));
-  eventMarkers = [];
+  state.eventMarkers.forEach(m => map.removeLayer(m));
+  state.eventMarkers = [];
 }
 
 // ══════════════════════════════════════════
 // SEARCH
 // ══════════════════════════════════════════
 async function searchEvents() {
-  if (currentLat === null) return;
+  if (state.currentLat === null) return;
 
   const loading = document.getElementById('loading');
   const warning = document.getElementById('backend-warning');
-  const isFirst = lastAllEvents.length === 0;
+  const isFirst = state.lastAllEvents.length === 0;
 
   if (isFirst) {
     loading.classList.add('visible');
@@ -508,17 +397,17 @@ async function searchEvents() {
     showSkeletons();
   }
 
-  if (radiusCircle && radiusCircle._path) radiusCircle._path.classList.add('pulsing');
+  if (state.radiusCircle && state.radiusCircle._path) state.radiusCircle._path.classList.add('pulsing');
   await fadeOutMarkers();
 
-  const fetchOverpass = activeCategories.size === 0 || [...activeCategories].some(c => OVERPASS_CATS.has(c));
-  const fetchBackend  = activeCategories.size === 0 || [...activeCategories].some(c => BACKEND_CATS.has(c) || c.startsWith('autre'));
-  const fetchMusee    = activeCategories.size === 0 || activeCategories.has('musee');
+  const fetchOverpass = state.activeCategories.size === 0 || [...state.activeCategories].some(c => OVERPASS_CATS.has(c));
+  const fetchBackend  = state.activeCategories.size === 0 || [...state.activeCategories].some(c => BACKEND_CATS.has(c) || c.startsWith('autre'));
+  const fetchMusee    = state.activeCategories.size === 0 || state.activeCategories.has('musee');
 
   const [overpassResult, backendResult, museeResult] = await Promise.allSettled([
-    fetchOverpass ? fetchPOI(currentLat, currentLng, currentRadius) : Promise.resolve([]),
-    fetchBackend  ? fetchBackendEvents(currentLat, currentLng, currentRadius) : Promise.resolve([]),
-    fetchMusee    ? fetchMuseumExpos(currentLat, currentLng, currentRadius) : Promise.resolve({}),
+    fetchOverpass ? fetchPOI(state.currentLat, state.currentLng, state.currentRadius) : Promise.resolve([]),
+    fetchBackend  ? fetchBackendEvents(state.currentLat, state.currentLng, state.currentRadius, getApiDays()) : Promise.resolve([]),
+    fetchMusee    ? fetchMuseumExpos(state.currentLat, state.currentLng, state.currentRadius) : Promise.resolve({}),
   ]);
 
   let pois = overpassResult.status === 'fulfilled' ? overpassResult.value : [];
@@ -533,8 +422,8 @@ async function searchEvents() {
     warning.style.display = 'block';
   }
 
-  museumExposMap = {};
-  if (museeResult.status === 'fulfilled') museumExposMap = museeResult.value;
+  state.museumExposMap = {};
+  if (museeResult.status === 'fulfilled') state.museumExposMap = museeResult.value;
   else console.warn('Museum expos indisponible:', museeResult.reason);
 
   // Merge + déduplication
@@ -552,7 +441,7 @@ async function searchEvents() {
   }
 
   // ── Filtre permanents (musées, cinémas OSM) ──
-  const showingPermanents = showPermanents;
+  const showingPermanents = state.showPermanents;
   if (!showingPermanents) {
     for (let i = all.length - 1; i >= 0; i--) {
       if (all[i].source === 'OpenStreetMap') all.splice(i, 1);
@@ -560,11 +449,11 @@ async function searchEvents() {
   }
 
   // Filtre catégorie
-  let filtered = activeCategories.size === 0
+  let filtered = state.activeCategories.size === 0
     ? all
     : all.filter(e => {
         const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
-        return activeCategories.has(eCat);
+        return state.activeCategories.has(eCat);
       });
 
   // Filtre période (frontend)
@@ -590,13 +479,13 @@ async function searchEvents() {
     return (a.dist ?? Infinity) - (b.dist ?? Infinity);
   });
 
-  lastAllEvents = all;
+  state.lastAllEvents = all;
   filtered.forEach((e, i) => { e._id = 'e' + i; });
   renderEvents(filtered);
   renderMarkers(filtered.filter(e => e.lat && e.lng));
 
   loading.classList.remove('visible');
-  if (radiusCircle && radiusCircle._path) radiusCircle._path.classList.remove('pulsing');
+  if (state.radiusCircle && state.radiusCircle._path) state.radiusCircle._path.classList.remove('pulsing');
 }
 
 async function searchEventsBrowse() {
@@ -604,15 +493,15 @@ async function searchEventsBrowse() {
   await fadeOutMarkers();
   const PARIS_LAT = 48.8566, PARIS_LNG = 2.3522;
   try {
-    const showingPermanents = showPermanents;
+    const showingPermanents = state.showPermanents;
 
     const params = new URLSearchParams({
       lat: PARIS_LAT, lng: PARIS_LNG, radius: 5000, days: getApiDays()
     });
-    if (activeCategories.size === 1) params.set('cat', [...activeCategories][0]);
+    if (state.activeCategories.size === 1) params.set('cat', [...state.activeCategories][0]);
 
     const fetchOverpass = showingPermanents
-      && (activeCategories.size === 0 || [...activeCategories].some(c => OVERPASS_CATS.has(c)));
+      && (state.activeCategories.size === 0 || [...state.activeCategories].some(c => OVERPASS_CATS.has(c)));
 
     const [resp, poisResult] = await Promise.all([
       fetch(`${API_BASE}/events?${params}`),
@@ -649,10 +538,10 @@ async function searchEventsBrowse() {
     }
 
     events = applyPeriodFilter(events);
-    if (activeCategories.size > 1) {
+    if (state.activeCategories.size > 1) {
       events = events.filter(e => {
         const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
-        return activeCategories.has(eCat);
+        return state.activeCategories.has(eCat);
       });
     }
     if (!showingPermanents) {
@@ -702,7 +591,7 @@ function renderEvents(events) {
 
   list.innerHTML = events.map(e => {
     const expos     = e.cat === 'musee'
-      ? (Object.entries(museumExposMap).find(([k]) => normalizeName(k) === normalizeName(e.titre)) || [])[1] || []
+      ? (Object.entries(state.museumExposMap).find(([k]) => normalizeName(k) === normalizeName(e.titre)) || [])[1] || []
       : [];
     const expoBadge = expos.length
       ? `<span class="expo-badge">🖼 ${expos.length} expo${expos.length > 1 ? 's' : ''}</span>`
@@ -753,13 +642,13 @@ function renderEvents(events) {
 // RENDER MAP MARKERS (staggered bounce)
 // ══════════════════════════════════════════
 function renderMarkers(events) {
-  eventMarkers.forEach(m => map.removeLayer(m));
-  eventMarkers = [];
+  state.eventMarkers.forEach(m => map.removeLayer(m));
+  state.eventMarkers = [];
 
   events.forEach((e, i) => {
     const normTitle = normalizeName(e.titre);
     const expos     = e.cat === 'musee'
-      ? (Object.entries(museumExposMap).find(([k]) => normalizeName(k) === normTitle) || [])[1] || []
+      ? (Object.entries(state.museumExposMap).find(([k]) => normalizeName(k) === normTitle) || [])[1] || []
       : [];
 
     const expoHtml = expos.length ? `
@@ -788,7 +677,7 @@ function renderMarkers(events) {
 
     marker.eventId = e._id;
     marker.on('click', () => highlightCard(e._id));
-    eventMarkers.push(marker);
+    state.eventMarkers.push(marker);
   });
 }
 
@@ -797,7 +686,7 @@ function renderMarkers(events) {
 // ══════════════════════════════════════════
 function focusEvent(id, lat, lng) {
   map.panTo([lat, lng], { animate: true, duration: 0.5 });
-  const m = eventMarkers.find(m => m.eventId === id);
+  const m = state.eventMarkers.find(m => m.eventId === id);
   if (m) m.openPopup();
   highlightCard(id);
 }
@@ -820,12 +709,12 @@ const mapRadiusControl = document.getElementById('map-radius-control');
 
 let sliderDebounce = null;
 document.getElementById('radius-slider').addEventListener('input', e => {
-  currentRadius = parseInt(e.target.value);
-  document.getElementById('radius-val').textContent = currentRadius;
-  mapSlider.value = currentRadius;
-  mapLabel.textContent = currentRadius + 'm';
-  if (currentLat) {
-    updateCircle(currentLat, currentLng);
+  state.currentRadius = parseInt(e.target.value);
+  document.getElementById('radius-val').textContent = state.currentRadius;
+  mapSlider.value = state.currentRadius;
+  mapLabel.textContent = state.currentRadius + 'm';
+  if (state.currentLat) {
+    updateCircle(state.currentLat, state.currentLng);
     if (window.innerWidth > 768) {
       clearTimeout(sliderDebounce);
       sliderDebounce = setTimeout(() => searchEvents(), 400);
@@ -835,12 +724,12 @@ document.getElementById('radius-slider').addEventListener('input', e => {
 
 // ── SLIDER CARTE (mobile) ──
 mapSlider.addEventListener('input', e => {
-  currentRadius = parseInt(e.target.value);
-  mapLabel.textContent = currentRadius + 'm';
-  document.getElementById('radius-slider').value = currentRadius;
-  document.getElementById('radius-val').textContent = currentRadius;
-  if (currentLat) {
-    updateCircle(currentLat, currentLng);
+  state.currentRadius = parseInt(e.target.value);
+  mapLabel.textContent = state.currentRadius + 'm';
+  document.getElementById('radius-slider').value = state.currentRadius;
+  document.getElementById('radius-val').textContent = state.currentRadius;
+  if (state.currentLat) {
+    updateCircle(state.currentLat, state.currentLng);
     if (window.innerWidth > 768) {
       clearTimeout(sliderDebounce);
       sliderDebounce = setTimeout(() => searchEvents(), 400);
@@ -875,10 +764,10 @@ function _applyCategories() {
   const selected = new Set(
     [...document.querySelectorAll('.cat-filter-chip.selected')].map(c => c.dataset.cat)
   );
-  activeCategories = selected;
+  state.activeCategories = selected;
   document.getElementById('cat-filter-btn').classList.toggle('active', selected.size > 0);
   _closeCatPanel();
-  if (currentLat !== null) searchEvents();
+  if (state.currentLat !== null) searchEvents();
   else searchEventsBrowse();
 }
 
@@ -886,9 +775,9 @@ const catPanel     = document.getElementById('cat-filter-panel');
 const catFilterBtn = document.getElementById('cat-filter-btn');
 
 function _openCatPanel() {
-  if (activeCategories.size === 0) {
+  if (state.activeCategories.size === 0) {
     document.querySelectorAll('.cat-filter-chip').forEach(chip => {
-      chip.classList.toggle('selected', currentMapCats.has(chip.dataset.cat));
+      chip.classList.toggle('selected', state.currentMapCats.has(chip.dataset.cat));
     });
     _syncToutState();
   }
@@ -897,7 +786,7 @@ function _openCatPanel() {
 }
 function _closeCatPanel() {
   catPanel.classList.remove('open');
-  if (activeCategories.size === 0) catFilterBtn.classList.remove('active');
+  if (state.activeCategories.size === 0) catFilterBtn.classList.remove('active');
 }
 
 catFilterBtn.addEventListener('click', e => {
@@ -949,9 +838,9 @@ document.querySelectorAll('.period-option').forEach(opt => {
 
     document.querySelectorAll('.period-option').forEach(o => o.classList.remove('active'));
     opt.classList.add('active');
-    periodMode = opt.dataset.mode;
+    state.periodMode = opt.dataset.mode;
     const labels = { nouveaux: 'Ouverts aujourd\'hui', current: 'En cours', recent: 'Récents' };
-    periodLabel.textContent = labels[periodMode];
+    periodLabel.textContent = labels[state.periodMode];
     updatePeriodBanner();
 
     // Si le clic vient de l'input ou du select, garder le popover ouvert
@@ -959,27 +848,27 @@ document.querySelectorAll('.period-option').forEach(opt => {
 
     periodPopover.classList.add('hidden');
     if (window.innerWidth > 768) {
-      if (currentLat !== null) searchEvents();
+      if (state.currentLat !== null) searchEvents();
       else searchEventsBrowse();
     }
   });
 });
 
 document.getElementById('period-days-val').addEventListener('change', () => {
-  periodMode = 'recent';
+  state.periodMode = 'recent';
   updatePeriodBanner();
   periodPopover.classList.add('hidden');
   if (window.innerWidth > 768) {
-    if (currentLat) searchEvents();
+    if (state.currentLat) searchEvents();
     else searchEventsBrowse();
   }
 });
 document.getElementById('period-days-unit').addEventListener('change', () => {
-  periodMode = 'recent';
+  state.periodMode = 'recent';
   updatePeriodBanner();
   periodPopover.classList.add('hidden');
   if (window.innerWidth > 768) {
-    if (currentLat) searchEvents();
+    if (state.currentLat) searchEvents();
     else searchEventsBrowse();
   }
 });
@@ -988,14 +877,14 @@ document.getElementById('period-days-unit').addEventListener('change', () => {
 // TOGGLE PERMANENTS
 // ══════════════════════════════════════════
 document.getElementById('show-all-btn').addEventListener('click', () => {
-  showPermanents = !showPermanents;
-  document.getElementById('show-all-btn').classList.toggle('active', showPermanents);
-  if (currentLat !== null) searchEvents();
+  state.showPermanents = !state.showPermanents;
+  document.getElementById('show-all-btn').classList.toggle('active', state.showPermanents);
+  if (state.currentLat !== null) searchEvents();
   else searchEventsBrowse();
 });
 
 document.getElementById('apply-filters-btn').addEventListener('click', () => {
-  if (currentLat !== null) searchEvents();
+  if (state.currentLat !== null) searchEvents();
   else searchEventsBrowse();
   if (window.innerWidth <= 768) {
     document.getElementById('sidebar').classList.remove('open');
