@@ -48,9 +48,13 @@ app.add_middleware(
 
 FRONTEND   = Path(__file__).parent.parent / "frontend" / "paris-explorer.html"
 STATIC_DIR = Path(__file__).parent.parent / "frontend" / "img"
+CSS_DIR    = Path(__file__).parent.parent / "frontend" / "css"
 
 if STATIC_DIR.exists():
     app.mount("/img", StaticFiles(directory=str(STATIC_DIR)), name="img")
+
+if CSS_DIR.exists():
+    app.mount("/css", StaticFiles(directory=str(CSS_DIR)), name="css")
 
 
 @app.get("/")
