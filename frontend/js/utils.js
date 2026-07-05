@@ -1,4 +1,5 @@
 import { CAT_COLORS, CAT_EMOJI, SOURCE_LABELS } from './config.js';
+import { state } from './state.js';
 
 export function getCatColor(cat) {
   if (!cat) return '#888';
@@ -61,4 +62,11 @@ export function freshnessWidth(identifiedDate) {
   if (!identifiedDate) return 0;
   const days = (Date.now() - new Date(identifiedDate)) / (1000 * 60 * 60 * 24);
   return Math.max(0, Math.round(100 - (days / 30) * 100));
+}
+
+export function getMuseumColor(normTitle) {
+  const hasExpo = Object.entries(state.museumExposMap).some(([k]) => normalizeName(k) === normTitle);
+  if (hasExpo) return '#4CAF50';
+  if (state.museumEverParsedSet.has(normTitle)) return getCatColor('musee');
+  return '#5C6470';
 }

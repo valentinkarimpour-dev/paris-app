@@ -2,9 +2,9 @@ import { state } from './state.js';
 import { _PARIS_POLY } from './config.js';
 import {
   getCatColor, getCatEmoji, getCatLabel,
-  normalizeName, formatDist, formatSource, toProper
+  normalizeName, formatDist, formatSource, toProper, getMuseumColor
 } from './utils.js';
-import { getMuseumColor, highlightCard } from './app.js';
+import { highlightCard } from './render.js';
 
 // ══════════════════════════════════════════
 // MAP INIT — CartoDB Voyager
