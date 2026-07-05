@@ -204,6 +204,7 @@ const catPanel     = document.getElementById('cat-filter-panel');
 const catFilterBtn = document.getElementById('cat-filter-btn');
 
 function _openCatPanel() {
+  _closeSourcePanel();
   if (state.activeCategories.size === 0) {
     document.querySelectorAll('.cat-filter-chip').forEach(chip => {
       chip.classList.toggle('selected', state.currentMapCats.has(chip.dataset.cat));
@@ -262,20 +263,22 @@ function _syncSourceToutState() {
 }
 
 function _applySources() {
-  const selected = new Set(
-    [...document.querySelectorAll('.source-filter-chip.selected')].flatMap(c => c.dataset.sources.split(','))
-  );
-  state.activeSources = selected;
-  document.getElementById('source-filter-btn').classList.toggle('active', selected.size > 0);
+  const selectedChips = [...document.querySelectorAll('.source-filter-chip.selected')];
+  state.activeSourceGroups = new Set(selectedChips.map(c => c.dataset.key));
+  state.activeSources = new Set(selectedChips.flatMap(c => c.dataset.sources.split(',')));
+  document.getElementById('source-filter-btn').classList.toggle('active', state.activeSources.size > 0);
   _closeSourcePanel();
+  _renderSourceChips();
   if (state.currentLat !== null) searchEvents(onMarkerClick);
   else searchEventsBrowse(onMarkerClick);
 }
 
 const sourcePanel     = document.getElementById('source-filter-panel');
 const sourceFilterBtn = document.getElementById('source-filter-btn');
+const mapSourcesEl    = document.getElementById('map-sources');
 
 function _openSourcePanel() {
+  _closeCatPanel();
   sourcePanel.classList.add('open');
   sourceFilterBtn.classList.add('active');
 }
@@ -283,10 +286,38 @@ function _closeSourcePanel() {
   sourcePanel.classList.remove('open');
   if (state.activeSources.size === 0) sourceFilterBtn.classList.remove('active');
 }
+function _toggleSourcePanel() {
+  sourcePanel.classList.contains('open') ? _closeSourcePanel() : _openSourcePanel();
+}
+
+// Chips récapitulatifs sous la carte : masqués si aucune source sélectionnée
+// ou si toutes le sont (équivalent à "Tout", donc pas un vrai filtre).
+const MAX_SOURCE_CHIPS = 3;
+function _renderSourceChips() {
+  mapSourcesEl.innerHTML = '';
+  const selected = state.activeSourceGroups;
+  if (selected.size === 0 || selected.size === SOURCE_FILTER_GROUPS.length) return;
+
+  const selectedGroups = SOURCE_FILTER_GROUPS.filter(g => selected.has(g.key));
+  selectedGroups.slice(0, MAX_SOURCE_CHIPS).forEach(({ label }) => {
+    const tag = document.createElement('button');
+    tag.className = 'cat-btn active';
+    tag.textContent = label;
+    tag.addEventListener('click', _toggleSourcePanel);
+    mapSourcesEl.appendChild(tag);
+  });
+  if (selectedGroups.length > MAX_SOURCE_CHIPS) {
+    const more = document.createElement('button');
+    more.className = 'cat-more-btn';
+    more.textContent = `+${selectedGroups.length - MAX_SOURCE_CHIPS}`;
+    more.addEventListener('click', _toggleSourcePanel);
+    mapSourcesEl.appendChild(more);
+  }
+}
 
 sourceFilterBtn.addEventListener('click', e => {
   e.stopPropagation();
-  sourcePanel.classList.contains('open') ? _closeSourcePanel() : _openSourcePanel();
+  _toggleSourcePanel();
 });
 
 state.map.on('click', _closeSourcePanel);

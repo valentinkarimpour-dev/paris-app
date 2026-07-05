@@ -27,6 +27,10 @@ function openCatPanel() {
     p.classList.remove('open');
     if (state.activeCategories.size === 0 && b) b.classList.remove('active');
   } else {
+    const sp = document.getElementById('source-filter-panel');
+    const sb = document.getElementById('source-filter-btn');
+    if (sp) sp.classList.remove('open');
+    if (sb && state.activeSources.size === 0) sb.classList.remove('active');
     p.classList.add('open');
     if (b) b.classList.add('active');
   }

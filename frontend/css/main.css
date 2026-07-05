@@ -808,6 +808,27 @@
     #period-info-banner { bottom: 130px; }
   }
 
+  /* ── SOURCE CHIPS (au-dessus de la bannière période) ── */
+  #map-sources {
+    position: absolute;
+    bottom: 94px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100% - 120px);
+    z-index: 997;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  #map-sources .cat-btn { pointer-events: all; }
+  #map-sources:empty { display: none; }
+  @media (max-width: 768px) {
+    #map-sources { bottom: 172px; }
+  }
+
   /* ── BUTTONS DROITE CARTE ── */
   #geolocate-btn {
     position: absolute;
@@ -888,7 +909,7 @@
 
   #cat-filter-panel {
     position: absolute;
-    top: 130px;
+    top: 186px;
     left: calc(100% + 8px);
     z-index: 1000;
     background: rgba(15,17,23,0.95);
