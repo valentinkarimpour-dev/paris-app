@@ -70,6 +70,36 @@ export function renderEvents(events) {
 }
 
 // ══════════════════════════════════════════
+// ADDRESS SUGGESTIONS
+// ══════════════════════════════════════════
+export function renderSuggestions(features, onSelect) {
+  const suggestions = document.getElementById('search-suggestions');
+  if (!features.length) { suggestions.classList.add('hidden'); return; }
+  suggestions.innerHTML = features.map(f => {
+    const props = f.properties;
+    const label = props.name || props.label;
+    const context = props.context || '';
+    const [lng, lat] = f.geometry.coordinates;
+    return `<li class="suggestion-item"
+                data-lat="${lat}"
+                data-lng="${lng}"
+                data-label="${props.label}">
+              <strong>${label}</strong>
+              <span>${context}</span>
+            </li>`;
+  }).join('');
+  suggestions.classList.remove('hidden');
+
+  suggestions.querySelectorAll('.suggestion-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const lat = parseFloat(item.dataset.lat);
+      const lng = parseFloat(item.dataset.lng);
+      onSelect(lat, lng, item.dataset.label);
+    });
+  });
+}
+
+// ══════════════════════════════════════════
 // FOCUS / HIGHLIGHT
 // ══════════════════════════════════════════
 export function focusEvent(id, lat, lng) {

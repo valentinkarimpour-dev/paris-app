@@ -1,17 +1,21 @@
-import {
-  API_BASE,
-  CAT_COLORS, CAT_EMOJI, SOURCE_LABELS, ALL_CATS
-} from './config.js';
+import { API_BASE, ALL_CATS } from './config.js';
 
 import { state } from './state.js';
 import { fetchSuggestions } from './api.js';
-import {
-  initMap, makeMarkerIcon, makePinIcon,
-  updateCircle, isInsideParis
-} from './map.js';
+import { initMap, makePinIcon, updateCircle, isInsideParis } from './map.js';
 import { updatePeriodBanner } from './filters.js';
-import { focusEvent, highlightCard } from './render.js';
+import { focusEvent, renderSuggestions } from './render.js';
 import { searchEvents, searchEventsBrowse, refreshColors } from './search.js';
+
+// ═══════════════════════════════════════════════════════════
+// app.js — Orchestrateur principal
+// Contient : init, event listeners, UI helpers
+// Logique métier → search.js | filters.js | render.js
+// Cartographie  → map.js
+// API           → api.js
+// État          → state.js
+// Constantes    → config.js | utils.js
+// ═══════════════════════════════════════════════════════════
 
 initMap();
 
@@ -31,7 +35,7 @@ addressInput.addEventListener('input', () => {
   searchClear.classList.toggle('hidden', !q);
   clearTimeout(searchDebounce);
   if (q.length < 3) { suggestions.classList.add('hidden'); return; }
-  searchDebounce = setTimeout(() => fetchSuggestions(q, renderSuggestions), 300);
+  searchDebounce = setTimeout(() => fetchSuggestions(q, features => renderSuggestions(features, selectAddressSuggestion)), 300);
 });
 
 searchClear.addEventListener('click', () => {
@@ -46,37 +50,13 @@ document.addEventListener('click', e => {
 });
 
 
-function renderSuggestions(features) {
-  if (!features.length) { suggestions.classList.add('hidden'); return; }
-  suggestions.innerHTML = features.map(f => {
-    const props = f.properties;
-    const label = props.name || props.label;
-    const context = props.context || '';
-    const [lng, lat] = f.geometry.coordinates;
-    return `<li class="suggestion-item"
-                data-lat="${lat}"
-                data-lng="${lng}"
-                data-label="${props.label}">
-              <strong>${label}</strong>
-              <span>${context}</span>
-            </li>`;
-  }).join('');
-  suggestions.classList.remove('hidden');
-
-  suggestions.querySelectorAll('.suggestion-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const lat = parseFloat(item.dataset.lat);
-      const lng = parseFloat(item.dataset.lng);
-      addressInput.value = item.dataset.label;
-      suggestions.classList.add('hidden');
-      searchClear.classList.remove('hidden');
-      state.map.setView([lat, lng], 16, { animate: true });
-      placePin(lat, lng);
-    });
-  });
+function selectAddressSuggestion(lat, lng, label) {
+  addressInput.value = label;
+  suggestions.classList.add('hidden');
+  searchClear.classList.remove('hidden');
+  state.map.setView([lat, lng], 16, { animate: true });
+  placePin(lat, lng);
 }
-
-
 
 // ══════════════════════════════════════════
 // PLACE PIN & SEARCH
