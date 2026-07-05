@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import re as _re_region
 import sys
 from abc import ABC, abstractmethod
@@ -254,6 +255,26 @@ def _normalize_categorie(cat: str) -> str:
         suggestion = c.split(":", 1)[1].strip() or "inconnu"
         return f"autre: {suggestion}"
     return f"autre: {c}"
+
+OUVERTURE_RE = re.compile(
+    r"\bouvr(?:e|es|ent|ir|ira|irait|ant|ait|aient|ons|ez)\b"
+    r"|\br(?:é|e)ouvr(?:e|es|ent|ir|ant|ait)\b"
+    r"|\b(?:a|ont|vient de|viennent de)\s+ouvert\b"
+    r"|\binaugur(?:e|es|ent|er|ation|ait|ants?)\b"
+    r"|\bs['’]install(?:e|es|ent|er|ait)\b",
+    re.I | re.UNICODE,
+)
+
+
+def matches_ouverture(href: str, text: str) -> bool:
+    """Détecte une annonce d'ouverture/réouverture/inauguration/installation
+    dans le slug d'URL ou le texte visible d'un article (lebonbon_healthy,
+    lebonbon_loisirs). Les \\b évitent de matcher un mot qui contient la
+    sous-chaîne par hasard (ex: "redécouvrir" contient "ouvrir").
+    """
+    slug = href.rstrip("/").split("/")[-1]
+    return bool(OUVERTURE_RE.search(slug) or OUVERTURE_RE.search(text))
+
 
 CAT_KEYWORDS = {
     "expo": [

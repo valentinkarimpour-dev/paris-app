@@ -8,12 +8,11 @@ Double passe LLM : Groq custom (adresse/dates) + extract_with_llm (titre/catégo
 import asyncio
 import json
 import logging
-import re
 from datetime import date, timedelta
 
 from playwright.async_api import async_playwright
 
-from ..base import BaseScraper, extract_with_llm, VALID_CATEGORIES, _get_groq
+from ..base import BaseScraper, extract_with_llm, VALID_CATEGORIES, _get_groq, matches_ouverture
 import geocoder
 
 logger = logging.getLogger(__name__)
@@ -26,15 +25,6 @@ _UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/124.0.0.0 Safari/537.36"
-)
-
-_RE_OUVERTURE = re.compile(
-    r'ouvr(?:e|es|ent|ir|ira|irait|ant|ait|aient|ons|ez)'
-    r'|r(?:é|e)ouvr(?:e|es|ent|ir|ant|ait)'
-    r'|(?:a|ont|vient de|viennent de)\s+ouvert'
-    r'|inaugur(?:e|es|ent|er|ation|ait|ants?)'
-    r"|s['']install(?:e|es|ent|er|ait)",
-    re.I | re.UNICODE,
 )
 
 
@@ -128,7 +118,7 @@ async def _scrape_async() -> list[dict]:
             art_text = art["text"]
             slug     = href.rstrip("/").split("/")[-1]
 
-            if not _RE_OUVERTURE.search(slug) and not _RE_OUVERTURE.search(art_text):
+            if not matches_ouverture(href, art_text):
                 logger.debug("[lebonbon_healthy] skipped (filtre ouverture) : %s", slug)
                 continue
 
