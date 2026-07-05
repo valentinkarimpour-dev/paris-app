@@ -1,4 +1,5 @@
 export const state = {
+  map:                 null,
   pinMarker:           null,
   radiusCircle:        null,
   eventMarkers:        [],
