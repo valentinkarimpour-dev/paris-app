@@ -88,6 +88,26 @@ export const SOURCE_FILTER_GROUPS = [
   { key: 'opendata',     label: 'Paris Opendata',    sources: ['paris_opendata'] },
 ];
 
+// Groupes de sources exclus par défaut à l'ouverture du site — activables
+// manuellement via le filtre source. INPI n'est pris en compte que si
+// l'utilisateur clique explicitement dessus dans le filtre.
+export const DEFAULT_EXCLUDED_SOURCE_GROUPS = new Set(['inpi']);
+
+export const DEFAULT_SOURCE_GROUP_KEYS = new Set(
+  SOURCE_FILTER_GROUPS.filter(g => !DEFAULT_EXCLUDED_SOURCE_GROUPS.has(g.key)).map(g => g.key)
+);
+
+// Vrai si la sélection de groupes ne constitue pas un vrai filtre : soit
+// tout est sélectionné, soit c'est exactement la sélection par défaut
+// (tout sauf INPI). Dans ces deux cas, l'UI ne doit rien signaler
+// (ni chips sous la carte, ni bouton mis en évidence).
+export function isBaselineSourceSelection(groupKeysSet) {
+  if (groupKeysSet.size === SOURCE_FILTER_GROUPS.length) return true;
+  if (groupKeysSet.size === DEFAULT_SOURCE_GROUP_KEYS.size &&
+      [...groupKeysSet].every(k => DEFAULT_SOURCE_GROUP_KEYS.has(k))) return true;
+  return false;
+}
+
 export const ALL_CATS = [
   { cat: 'musique',      emoji: '🎵', label: 'Musique' },
   { cat: 'exposition',   emoji: '🖼', label: 'Expo' },

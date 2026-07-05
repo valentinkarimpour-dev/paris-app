@@ -1,6 +1,6 @@
 // frontend/js/search.js
 import { state } from './state.js';
-import { API_BASE, OVERPASS_CATS, BACKEND_CATS, SOURCE_FILTER_GROUPS } from './config.js';
+import { API_BASE, OVERPASS_CATS, BACKEND_CATS, SOURCE_FILTER_GROUPS, isBaselineSourceSelection } from './config.js';
 import {
   getApiDays, applyPeriodFilter,
   updateCatCounts, showSkeletons
@@ -13,8 +13,10 @@ import { renderEvents } from './render.js';
 // ou une source pas encore ajoutée au filtre) n'est jamais masquée.
 const FILTERABLE_SOURCES = new Set(SOURCE_FILTER_GROUPS.flatMap(g => g.sources));
 
+// state.activeSources est la liste des sources filtrables actuellement
+// autorisées (par défaut : tout sauf INPI, voir state.js). Une source hors
+// de FILTERABLE_SOURCES (musées, OSM...) n'est jamais affectée par ce filtre.
 function applySourceFilter(events) {
-  if (state.activeSources.size === 0) return events;
   return events.filter(e => !FILTERABLE_SOURCES.has(e.source) || state.activeSources.has(e.source));
 }
 
@@ -30,7 +32,7 @@ function openCatPanel() {
     const sp = document.getElementById('source-filter-panel');
     const sb = document.getElementById('source-filter-btn');
     if (sp) sp.classList.remove('open');
-    if (sb && state.activeSources.size === 0) sb.classList.remove('active');
+    if (sb && isBaselineSourceSelection(state.activeSourceGroups)) sb.classList.remove('active');
     p.classList.add('open');
     if (b) b.classList.add('active');
   }

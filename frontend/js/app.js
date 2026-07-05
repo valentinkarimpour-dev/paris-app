@@ -1,4 +1,4 @@
-import { API_BASE, ALL_CATS, SOURCE_FILTER_GROUPS } from './config.js';
+import { API_BASE, ALL_CATS, SOURCE_FILTER_GROUPS, isBaselineSourceSelection } from './config.js';
 
 import { state } from './state.js';
 import { fetchSuggestions } from './api.js';
@@ -245,7 +245,7 @@ catPanel.addEventListener('click', e => e.stopPropagation());
 const sourceChipsContainer = document.getElementById('source-filter-chips');
 SOURCE_FILTER_GROUPS.forEach(({ key, label, sources }) => {
   const chip = document.createElement('button');
-  chip.className = 'source-filter-chip';
+  chip.className = 'source-filter-chip' + (state.activeSourceGroups.has(key) ? ' selected' : '');
   chip.dataset.key = key;
   chip.dataset.sources = sources.join(',');
   chip.textContent = label;
@@ -266,7 +266,7 @@ function _applySources() {
   const selectedChips = [...document.querySelectorAll('.source-filter-chip.selected')];
   state.activeSourceGroups = new Set(selectedChips.map(c => c.dataset.key));
   state.activeSources = new Set(selectedChips.flatMap(c => c.dataset.sources.split(',')));
-  document.getElementById('source-filter-btn').classList.toggle('active', state.activeSources.size > 0);
+  document.getElementById('source-filter-btn').classList.toggle('active', !isBaselineSourceSelection(state.activeSourceGroups));
   _closeSourcePanel();
   _renderSourceChips();
   if (state.currentLat !== null) searchEvents(onMarkerClick);
@@ -284,19 +284,19 @@ function _openSourcePanel() {
 }
 function _closeSourcePanel() {
   sourcePanel.classList.remove('open');
-  if (state.activeSources.size === 0) sourceFilterBtn.classList.remove('active');
+  if (isBaselineSourceSelection(state.activeSourceGroups)) sourceFilterBtn.classList.remove('active');
 }
 function _toggleSourcePanel() {
   sourcePanel.classList.contains('open') ? _closeSourcePanel() : _openSourcePanel();
 }
 
-// Chips récapitulatifs sous la carte : masqués si aucune source sélectionnée
-// ou si toutes le sont (équivalent à "Tout", donc pas un vrai filtre).
+// Chips récapitulatifs sous la carte : masqués si la sélection ne constitue
+// pas un vrai filtre (tout sélectionné, ou exactement le défaut sans INPI).
 const MAX_SOURCE_CHIPS = 3;
 function _renderSourceChips() {
   mapSourcesEl.innerHTML = '';
   const selected = state.activeSourceGroups;
-  if (selected.size === 0 || selected.size === SOURCE_FILTER_GROUPS.length) return;
+  if (isBaselineSourceSelection(selected)) return;
 
   const selectedGroups = SOURCE_FILTER_GROUPS.filter(g => selected.has(g.key));
   selectedGroups.slice(0, MAX_SOURCE_CHIPS).forEach(({ label }) => {
