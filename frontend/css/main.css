@@ -971,6 +971,108 @@
     letter-spacing: 0.3px;
   }
 
+  #source-filter-btn {
+    position: absolute;
+    top: 132px;
+    right: -52px;
+    z-index: 1001;
+    width: 44px;
+    height: 44px;
+    background: var(--ink);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    transition: border-color 0.2s;
+  }
+  #source-filter-btn:hover,
+  #source-filter-btn.active { border-color: var(--green); }
+
+  #source-filter-panel {
+    position: absolute;
+    top: 186px;
+    left: calc(100% + 8px);
+    z-index: 1000;
+    background: rgba(15,17,23,0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 16px;
+    width: 280px;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  #source-filter-panel.open { display: flex; }
+
+  #source-filter-tout {
+    width: 100%;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    color: var(--stone);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  #source-filter-tout.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--ink);
+  }
+
+  #source-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .source-filter-chip {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--stone);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .source-filter-chip.selected {
+    background: var(--green);
+    border-color: var(--green);
+    color: #0F1117;
+    font-weight: 600;
+  }
+
+  #source-filter-apply {
+    width: 100%;
+    background: var(--green);
+    border: none;
+    color: #0F1117;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+
   /* ── LEAFLET CUSTOM ── */
   .leaflet-popup-content-wrapper {
     background: #0F1117;

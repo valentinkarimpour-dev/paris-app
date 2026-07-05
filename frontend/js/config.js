@@ -71,6 +71,23 @@ export const SOURCE_LABELS = {
   'OpenStreetMap':    'OpenStreetMap',
 };
 
+// Sources de scraping filtrables sur la carte.
+// Les sources musées (parismusee_expos, museofile) et OpenStreetMap sont
+// volontairement ignorées : elles restent toujours affichées, quel que soit
+// le filtre. Quand une nouvelle source de scraping valide est ajoutée,
+// il faut penser à l'ajouter ici pour qu'elle apparaisse dans le filtre.
+export const SOURCE_FILTER_GROUPS = [
+  { key: 'sortiraparis', label: 'Sortir à Paris',   sources: ['sortiraparis', 'sortiraparis_restaurant', 'sortiraparis_cafes', 'sortiraparis_expos', 'sortiraparis_popup'] },
+  { key: 'lebonbon',     label: 'LeBonbon',          sources: ['lebonbon_food', 'lebonbon_drinks', 'lebonbon_news', 'lebonbon_healthy', 'lebonbon_loisirs'] },
+  { key: 'parisbouge',   label: 'ParisBouge',        sources: ['parisbouge_bars', 'parisbouge_restos', 'parisbouge_expos', 'parisbouge_autre'] },
+  { key: 'timeout',      label: 'Time Out Paris',    sources: ['timeout_paris'] },
+  { key: 'newtable',     label: 'NewTable',          sources: ['newtable'] },
+  { key: 'numero',       label: 'Numéro',            sources: ['numero_popup'] },
+  { key: 'secrets',      label: 'Secrets of Paris',  sources: ['secrets_of_paris'] },
+  { key: 'inpi',         label: 'INPI',              sources: ['inpi_food', 'inpi_drinks'] },
+  { key: 'opendata',     label: 'Paris Opendata',    sources: ['paris_opendata'] },
+];
+
 export const ALL_CATS = [
   { cat: 'musique',      emoji: '🎵', label: 'Musique' },
   { cat: 'exposition',   emoji: '🖼', label: 'Expo' },

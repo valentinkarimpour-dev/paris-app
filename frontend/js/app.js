@@ -1,4 +1,4 @@
-import { API_BASE, ALL_CATS } from './config.js';
+import { API_BASE, ALL_CATS, SOURCE_FILTER_GROUPS } from './config.js';
 
 import { state } from './state.js';
 import { fetchSuggestions } from './api.js';
@@ -236,6 +236,72 @@ toutBtn.addEventListener('click', () => {
 });
 
 catPanel.addEventListener('click', e => e.stopPropagation());
+
+// ══════════════════════════════════════════
+// SOURCE FILTER PANEL
+// ══════════════════════════════════════════
+
+const sourceChipsContainer = document.getElementById('source-filter-chips');
+SOURCE_FILTER_GROUPS.forEach(({ key, label, sources }) => {
+  const chip = document.createElement('button');
+  chip.className = 'source-filter-chip';
+  chip.dataset.key = key;
+  chip.dataset.sources = sources.join(',');
+  chip.textContent = label;
+  chip.addEventListener('click', () => {
+    chip.classList.toggle('selected');
+    _syncSourceToutState();
+  });
+  sourceChipsContainer.appendChild(chip);
+});
+
+function _syncSourceToutState() {
+  const all = document.querySelectorAll('.source-filter-chip');
+  const sel = document.querySelectorAll('.source-filter-chip.selected');
+  document.getElementById('source-filter-tout').classList.toggle('active', sel.length === all.length && all.length > 0);
+}
+
+function _applySources() {
+  const selected = new Set(
+    [...document.querySelectorAll('.source-filter-chip.selected')].flatMap(c => c.dataset.sources.split(','))
+  );
+  state.activeSources = selected;
+  document.getElementById('source-filter-btn').classList.toggle('active', selected.size > 0);
+  _closeSourcePanel();
+  if (state.currentLat !== null) searchEvents(onMarkerClick);
+  else searchEventsBrowse(onMarkerClick);
+}
+
+const sourcePanel     = document.getElementById('source-filter-panel');
+const sourceFilterBtn = document.getElementById('source-filter-btn');
+
+function _openSourcePanel() {
+  sourcePanel.classList.add('open');
+  sourceFilterBtn.classList.add('active');
+}
+function _closeSourcePanel() {
+  sourcePanel.classList.remove('open');
+  if (state.activeSources.size === 0) sourceFilterBtn.classList.remove('active');
+}
+
+sourceFilterBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  sourcePanel.classList.contains('open') ? _closeSourcePanel() : _openSourcePanel();
+});
+
+state.map.on('click', _closeSourcePanel);
+state.map.on('drag',  _closeSourcePanel);
+document.getElementById('source-filter-apply').addEventListener('click', _applySources);
+
+const sourceToutBtn = document.getElementById('source-filter-tout');
+sourceToutBtn.addEventListener('click', () => {
+  const allChips = document.querySelectorAll('.source-filter-chip');
+  const allSelected = [...allChips].every(c => c.classList.contains('selected'));
+  allChips.forEach(c => allSelected ? c.classList.remove('selected') : c.classList.add('selected'));
+  _syncSourceToutState();
+});
+
+sourcePanel.addEventListener('click', e => e.stopPropagation());
 
 // ══════════════════════════════════════════
 // PERIOD FILTER — dropdown popover

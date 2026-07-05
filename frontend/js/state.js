@@ -8,6 +8,7 @@ export const state = {
   currentRadius:       500,
   activeCategories:    new Set(),
   currentMapCats:      new Set(),
+  activeSources:       new Set(),
   periodMode:          'nouveaux',
   museumExposMap:      {},
   museumEverParsedSet: new Set(),

@@ -1,7 +1,7 @@
 # Flâneur Paris
 
 Application de découverte d'événements et d'adresses à Paris, centrée sur la carte.  
-L'utilisateur pose un pin (ou glisse le 🚶 pegman) sur la carte, définit un rayon, et voit tous les événements autour de lui.
+L'utilisateur pose un pin sur la carte, définit un rayon, et voit tous les événements autour de lui.
 
 **Production :** `http://145.241.168.3:8000/`
 
@@ -19,7 +19,7 @@ L'utilisateur pose un pin (ou glisse le 🚶 pegman) sur la carte, définit un r
 | Extraction LLM | Groq — `llama-3.1-8b-instant` (gratuit) |
 | Géocodage | Nominatim OSM + api-adresse.data.gouv.fr (INPI) |
 | Orchestration | n8n (`n8n_daily.json`) — APScheduler désactivé |
-| Frontend | HTML/CSS/JS vanilla + Leaflet.js |
+| Frontend | HTML + modules ES6 vanilla (`frontend/js/`) + Leaflet.js |
 | POI carte | Overpass API (cinémas, musées, galeries OSM) |
 
 ---
@@ -43,12 +43,12 @@ Démarre le backend sur `http://localhost:8000` et Datasette sur `:8001`.
 | `ParisOpenData` | Que Faire à Paris (opendata.paris.fr) | API REST |
 | `ParisBougeAutre` / `Restos` / `Bars` / `Expos` | parisbouge.com | Playwright |
 | `NewTable` | fr.newtable.com | Playwright |
-| `LeBonbonNews` / `Food` / `Drinks` | lebonbon.fr | Playwright + BS4 |
+| `LeBonbonNews` / `Food` / `Drinks` / `Healthy` | lebonbon.fr | Playwright + BS4 |
 | `NumeroPopup` | numero.com | Playwright + LLM |
 | `InpiFoodScraper` | INPI RNE — NAF 5610A (restauration) | API INPI |
 | `InpiDrinksScraper` | INPI RNE — NAF 5630Z (débits de boissons) | API INPI |
-| `SortirAParis` | sortiraparis.com | Jina + Playwright + LLM |
 | `TimeOutParis` | timeout.fr/paris | Jina + Playwright + LLM |
+| `SortirAParisRestaurant` / `Cafes` / `Expos` / `Popup` | sortiraparis.com | Jina + Playwright + LLM |
 
 ### Mensuel — `MONTHLY_SCRAPERS` (n8n, uniquement le 1er du mois)
 
@@ -66,7 +66,7 @@ Le workflow `n8n_daily.json` se déclenche **tous les jours à 6h** :
 
 ```
 Schedule (6h daily)
-  → POST /scrapers/run-all       ← 14 scrapers en background
+  → POST /scrapers/run-all       ← 18 scrapers en background
   → Wait 6 min
   → GET /scrapers/last-run
   → POST /purge                  ← supprime les événements expirés
@@ -124,13 +124,27 @@ paris_app_project/
 ├── pyproject.toml
 │
 ├── frontend/
-│   └── paris-explorer.html       ← app complète (single-file HTML/CSS/JS)
+│   ├── paris-explorer.html       ← shell HTML, charge css/main.css + js/*
+│   ├── css/
+│   │   └── main.css              ← styles extraits du HTML
+│   ├── js/                       ← modules ES6, orchestrés par app.js
+│   │   ├── app.js                ← orchestrateur, câble les autres modules
+│   │   ├── config.js             ← constantes (API_BASE, SOURCE_LABELS...)
+│   │   ├── state.js              ← état global (events, filteredEvents...)
+│   │   ├── api.js                ← appels backend (/events, /stats...)
+│   │   ├── map.js                ← carte Leaflet, markers, selectEvent()
+│   │   ├── filters.js            ← filtres période/catégorie
+│   │   ├── search.js             ← recherche d'événements/adresse
+│   │   ├── render.js             ← rendu sidebar + suggestions
+│   │   └── utils.js              ← helpers (toProper, formatSource...)
+│   └── img/                      ← icônes et images statiques
 │
 └── backend/
     ├── main.py                   ← FastAPI — endpoints
     ├── db.py                     ← SQLite — schéma, insert, requêtes
     ├── geocoder.py               ← Nominatim wrapper
     ├── scheduler.py              ← APScheduler (désactivé)
+    ├── tests/                    ← tests unitaires (pytest)
     ├── utils/
     │   ├── expo_parser.py        ← extraction expos BS4 + regex
     │   ├── typer.py              ← typage galeries OSM
@@ -138,7 +152,7 @@ paris_app_project/
     │   └── email_reader.py       ← lecteur IMAP
     └── scrapers/
         ├── __init__.py           ← ALL_SCRAPERS, MONTHLY_SCRAPERS
-        ├── base.py               ← BaseScraper + extract_with_llm
+        ├── base.py               ← BaseScraper, extract_with_llm, VALID_CATEGORIES
         ├── website/              ← Playwright / BS4
         ├── editorial/            ← Jina + Playwright + LLM
         ├── opendata/             ← APIs publiques (Paris opendata, INPI)

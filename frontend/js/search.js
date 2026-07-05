@@ -1,6 +1,6 @@
 // frontend/js/search.js
 import { state } from './state.js';
-import { API_BASE, OVERPASS_CATS, BACKEND_CATS } from './config.js';
+import { API_BASE, OVERPASS_CATS, BACKEND_CATS, SOURCE_FILTER_GROUPS } from './config.js';
 import {
   getApiDays, applyPeriodFilter,
   updateCatCounts, showSkeletons
@@ -8,6 +8,15 @@ import {
 import { fetchPOI, fetchBackendEvents, fetchMuseumExpos } from './api.js';
 import { fadeOutMarkers, renderMarkers } from './map.js';
 import { renderEvents } from './render.js';
+
+// Sources connues du filtre — une source hors de cet ensemble (musées, OSM,
+// ou une source pas encore ajoutée au filtre) n'est jamais masquée.
+const FILTERABLE_SOURCES = new Set(SOURCE_FILTER_GROUPS.flatMap(g => g.sources));
+
+function applySourceFilter(events) {
+  if (state.activeSources.size === 0) return events;
+  return events.filter(e => !FILTERABLE_SOURCES.has(e.source) || state.activeSources.has(e.source));
+}
 
 // Proxy local — évite un import depuis app.js (orchestrateur, pas un module de logique)
 function openCatPanel() {
@@ -39,12 +48,13 @@ export async function refreshColors(onMarkerClick) {
       [...state.museumEverParsedSet].sort().join(',') !== prevMuseumParsed;
     if (!changed) return;
     state.museumExposMap = newMuseumExpos;
-    const filtered = state.activeCategories.size === 0
+    let filtered = state.activeCategories.size === 0
       ? state.lastAllEvents
       : state.lastAllEvents.filter(e => {
           const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
           return state.activeCategories.has(eCat);
         });
+    filtered = applySourceFilter(filtered);
     filtered.forEach((e, i) => { e._id = 'e' + i; });
     renderMarkers(filtered.filter(e => e.lat && e.lng), onMarkerClick);
     renderEvents(filtered);
@@ -127,6 +137,9 @@ export async function searchEvents(onMarkerClick) {
         const eCat = (e.cat || '').startsWith('autre') ? 'autre' : e.cat;
         return state.activeCategories.has(eCat);
       });
+
+  // Filtre source
+  filtered = applySourceFilter(filtered);
 
   // Filtre période (frontend)
   filtered = applyPeriodFilter(filtered);
@@ -224,6 +237,7 @@ export async function searchEventsBrowse(onMarkerClick) {
     if (!showingPermanents) {
       events = events.filter(e => e.source !== 'OpenStreetMap');
     }
+    events = applySourceFilter(events);
     events.sort((a, b) => {
       const aDebut = a.date_debut || null;
       const bDebut = b.date_debut || null;
