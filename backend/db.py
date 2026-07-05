@@ -458,6 +458,19 @@ def get_last_run_summary() -> dict:
     }
 
 
+def get_l7d_inserted() -> dict:
+    """Total d'events insérés par scraper sur les 7 derniers jours (runs 'done' uniquement)."""
+    cutoff = (datetime.now() - timedelta(days=7)).isoformat(timespec="seconds")
+    with _conn() as conn:
+        rows = conn.execute("""
+            SELECT scraper, COALESCE(SUM(inserted), 0)
+            FROM scraper_runs
+            WHERE started_at >= ? AND status = 'done'
+            GROUP BY scraper
+        """, (cutoff,)).fetchall()
+    return {r[0]: r[1] for r in rows}
+
+
 def log_category_suggestion(suggestion: str) -> None:
     """Incrémente le compteur d'une suggestion 'autre: X'."""
     now = datetime.now().isoformat(timespec="seconds")

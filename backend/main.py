@@ -109,7 +109,13 @@ def trigger_monthly_scrapers(background_tasks: BackgroundTasks):
 
 @app.get("/scrapers/last-run")
 def last_run_summary():
-    return db.get_last_run_summary()
+    from scrapers import ALL_SCRAPERS, MONTHLY_SCRAPERS
+    summary = db.get_last_run_summary()
+    l7d = db.get_l7d_inserted()
+    for s in ALL_SCRAPERS + MONTHLY_SCRAPERS:
+        l7d.setdefault(s.name, 0)
+    summary["l7d_inserted"] = dict(sorted(l7d.items(), key=lambda kv: -kv[1]))
+    return summary
 
 
 @app.post("/scrapers/run/{name}")
