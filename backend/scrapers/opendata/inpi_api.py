@@ -61,17 +61,17 @@ def get_token() -> str:
     return token
 
 
-def fetch_immatriculations(token: str, date_cible: date) -> list[dict]:
+def fetch_immatriculations(token: str, date_from: date, date_to: date) -> list[dict]:
     headers  = {"Authorization": f"Bearer {token}"}
-    date_from = date_cible.isoformat()
-    date_to   = (date_cible + timedelta(days=1)).isoformat()
+    date_from_s = date_from.isoformat()
+    date_to_s   = (date_to + timedelta(days=1)).isoformat()
     resultats = []
     page = 1
 
     while True:
         params = {
-            "submitDateFrom":  date_from,
-            "submitDateTo":    date_to,
+            "submitDateFrom":  date_from_s,
+            "submitDateTo":    date_to_s,
             "zipCodes[]":      PARIS_ZIP,
             "activitySectors": "COMMERCIALE",
             "pageSize":        100,
@@ -219,31 +219,37 @@ def geocoder_etablissement(etab: Etablissement) -> Etablissement:
     return etab
 
 
-def run(date_cible: date | None = None, naf_cibles: set[str] | None = None) -> list[Etablissement]:
-    if date_cible is None:
-        date_cible = date.today()
+LAG_DAYS      = 2   # l'API RNE publie les immatriculations avec ~2-3j de délai
+LOOKBACK_DAYS = 7   # fenêtre glissante interrogée à chaque run (dédup par siren)
+
+
+def run(date_from: date | None = None, date_to: date | None = None, naf_cibles: set[str] | None = None) -> list[Etablissement]:
+    if date_to is None:
+        date_to = date.today() - timedelta(days=LAG_DAYS)
+    if date_from is None:
+        date_from = date_to - timedelta(days=LOOKBACK_DAYS)
 
     cibles = naf_cibles or NAF_CIBLES
-    logger.info("[inpi_api] Date ciblée : %s | NAF : %s", date_cible, cibles)
+    logger.info("[inpi_api] Fenêtre : %s → %s | NAF : %s", date_from, date_to, cibles)
     token     = get_token()
-    bruts     = fetch_immatriculations(token, date_cible)
+    bruts     = fetch_immatriculations(token, date_from, date_to)
     retenus   = filtrer_et_normaliser(bruts, cibles)
     resultats = [geocoder_etablissement(e) for e in retenus]
 
     geocodes = sum(1 for e in resultats if e.lat is not None)
     logger.info(
-        "[inpi_api] Résumé : date=%s | bruts=%d | après NAF=%d | géocodés=%d",
-        date_cible, len(bruts), len(retenus), geocodes,
+        "[inpi_api] Résumé : fenêtre=%s→%s | bruts=%d | après NAF=%d | géocodés=%d",
+        date_from, date_to, len(bruts), len(retenus), geocodes,
     )
     return resultats
 
 
-def scrape_inpi(naf_cibles: set[str], categorie: str, date_cible: date | None = None) -> list[dict]:
+def scrape_inpi(naf_cibles: set[str], categorie: str) -> list[dict]:
     """
     Appelé par les scrapers food/drinks. Retourne une liste de dicts
     compatibles avec db.insert_event().
     """
-    items = run(date_cible=date_cible, naf_cibles=naf_cibles)
+    items = run(naf_cibles=naf_cibles)
     return [
         {
             "titre":       e.titre,
